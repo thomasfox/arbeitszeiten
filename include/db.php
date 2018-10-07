@@ -47,12 +47,12 @@ function getOptionsForRows($columnInfos, $conn)
   {
 	if (isset($columnInfo->foreignType))
 	{
-	  if ($columnInfo->foreignType == "dropdown" || $columnInfo->foreignType == "text")
+	  if ($columnInfo->foreignType == "dropdown" || $columnInfo->foreignType == "text" || $columnInfo->foreignType == "nToM")
 	  {
 	    $descriptionColumn = $columnInfo->foreignColumn;
         $optionsTable = $columnInfo->foreignTable;
 	  }
-	  else if ($columnInfo->foreignType == "multicolumn")
+      else if ($columnInfo->foreignType == "multicolumn")
 	  {
 	    $descriptionColumn = $columnInfo->columnValuesDescriptionColumn;
         $optionsTable = $columnInfo->columnValuesTable;
@@ -110,6 +110,29 @@ function getValuesForMulticolumns($tableName, $columnInfos, $conn)
 		echo "error for " . $sql . ":" . $conn->error . "<br>";
 	  }
 	}
+	else if ($columnInfo->foreignType == "nToM")
+	{
+	  $columnsToSelect = $tableName . "_id, " . $columnInfo->foreignTable . "_id";
+	  $sql = "SELECT " . $columnsToSelect . " FROM " . $columnInfo->columnValuesTable;
+      $result = $conn->query($sql);
+	  if ($conn->errno == 0)
+	  {
+		$valuesForMulticolumn = array();
+		while ($row = $result->fetch_assoc()) 
+		{
+		  if (!isset($valuesForMulticolumn[$row[$tableName . "_id"]]))
+		  {
+			$valuesForMulticolumn[$row[$tableName . "_id"]] = array(); 
+		  }
+		  $valuesForMulticolumn[$row[$tableName . "_id"]][$row[$columnInfo->foreignTable . "_id"]] = "1";
+		}
+		$valuesForMulticolumns[$columnInfo->databaseName] = $valuesForMulticolumn;
+	  }
+	  else
+	  {
+		echo "error for " . $sql . ":" . $conn->error . "<br>";
+	  }
+	}
   }
   return $valuesForMulticolumns;
 }
@@ -125,16 +148,16 @@ function columnDataAsEditableTable($tableName, $columnInfos, $conn)
   echo '<form method="POST"><table><tr><td>Nr</td>';
   foreach ($columnInfos as $columnInfo)
   {
-	if ($columnInfo->foreignType != "multicolumn")
-	{
-      echo "<td>" . $columnInfo->getDisplayName() . "</td>";
-	}
-	else
+	if ($columnInfo->foreignType == "multicolumn" || $columnInfo->foreignType == "nToM")
 	{
 	  foreach ($optionsForRows[$columnInfo->databaseName] as $displayName)
 	  {
 		echo "<td>" . $displayName . "</td>";
 	  }
+	}
+	else
+	{
+      echo "<td>" . $columnInfo->getDisplayName() . "</td>";
 	}
   }
   echo "</tr>";
@@ -177,6 +200,21 @@ function columnDataAsEditableTable($tableName, $columnInfos, $conn)
 			  $inputValue = $valuesForRow[$id][$optionId];
 			}
 		    echo '<td><input name="'. $inputName . '" value="' . $inputValue . '" /></td>';
+		  }
+		}
+		else if ($columnInfo->foreignType == "nToM")
+		{
+		  $optionsForRow = $optionsForRows[$columnInfo->databaseName];
+		  $valuesForRow = $valuesForMulticolumns[$columnInfo->databaseName];
+		  foreach ($optionsForRow as $optionId=>$optionDisplayName)
+		  {
+			$inputName = $columnInfo->databaseName . $id . '_' . $optionId;
+		    $checkedString = "";
+		    if (isset($valuesForRow[$id][$optionId]))
+		    {
+		      $checkedString = ' checked="checked"';
+		    }
+		    echo '<td><input type="checkbox" name="'. $inputName . '" value="1" ' . $checkedString . '/></td>';
 		  }
 		}
 		else if ($columnInfo->foreignType == "text")
@@ -226,6 +264,15 @@ function columnDataAsEditableTable($tableName, $columnInfos, $conn)
 		echo '<td><input name="'. $inputName . '" /></td>';
 	  }
 	}
+	else if ($columnInfo->foreignType == "nToM")
+	{
+	  $optionsForRow = $optionsForRows[$columnInfo->databaseName];
+	  foreach ($optionsForRow as $optionId=>$optionDisplayName)
+	  {
+		$inputName = $columnInfo->databaseName . '_' . $optionId;
+		echo '<td><input type="checkbox" name="'. $inputName . '" value="1" /></td>';
+	  }
+	}
 	else
 	{
       echo '<td><input name="'. $columnInfo->databaseName . '"/></td>';
@@ -269,7 +316,7 @@ function doUpdates($tableName, $row, $columnInfos, $postData, $conn)
   $validationFailed = false;
   foreach ($columnInfos as $columnInfo)
   {
-	if ($columnInfo->foreignType != "multicolumn")
+	if ($columnInfo->foreignType != "multicolumn" && $columnInfo->foreignType != "nToM")
 	{
 	  $submittedValue = trim($postData[$columnInfo->databaseName . $id]);
 	  if ($columnInfo->required && empty($submittedValue))
@@ -322,14 +369,18 @@ function doUpdates($tableName, $row, $columnInfos, $postData, $conn)
 	    }
 	  }
 	}
-	else if (!$validationFailed) // TODO does not work in all cases, we should collect all data before writing into db
+	else if (!$validationFailed) // TODO validation check does not work in all cases, we should collect all data before writing into db
 	{
 	  $optionsForRow = $optionsForRows[$columnInfo->databaseName];
 	  $dbValuesForRow = $valuesForMulticolumns[$columnInfo->databaseName];
 	  foreach ($optionsForRow as $optionId=>$optionDisplayName)
 	  {
 		$inputName = $columnInfo->databaseName . $id . '_' . $optionId;
-		$submittedValue = trim($postData[$inputName]);
+		$submittedValue = "";
+		if (isset($postData[$inputName]))
+		{
+		  $submittedValue = trim($postData[$inputName]);
+		}
 		$dbValue = "";
 		if (isset($dbValuesForRow[$id][$optionId]))
 		{
@@ -337,37 +388,68 @@ function doUpdates($tableName, $row, $columnInfos, $postData, $conn)
 		}
 		if ($dbValue != $submittedValue)
 		{
-		  if (isset($dbValuesForRow[$id][$optionId]) && !empty($submittedValue))
+		  if (isset($dbValuesForRow[$id][$optionId]) && !empty($submittedValue) && $columnInfo->foreignType != "multicolumn")
 		  {
-		    $sql = "UPDATE " . $columnInfo->foreignTable . " SET " . $columnInfo->databaseName . "=? " 
-				. "WHERE " . $columnInfo->foreignTableReferenceColumn . "=? "
-				. "AND " . $columnInfo->foreignColumn . "=?";
-	        $statement = $conn->prepare($sql);
-		    $statement->bind_param("sii", $submittedValue, $optionId, $id); 
-			if (!$statement->execute())
+			if ($columnInfo->foreignType != "multicolumn")
 			{
-			  echo "Execute of " . $sql . " with binding " . $submittedValue . ", ". $optionId . ", ". $id . "failed (" . $statement->error . ")";
+		      $sql = "UPDATE " . $columnInfo->foreignTable . " SET " . $columnInfo->databaseName . "=? " 
+				  . "WHERE " . $columnInfo->foreignTableReferenceColumn . "=? "
+				  . "AND " . $columnInfo->foreignColumn . "=?";
+	          $statement = $conn->prepare($sql);
+		      $statement->bind_param("sii", $submittedValue, $optionId, $id); 
+			  if (!$statement->execute())
+			  {
+			    echo "Execute of " . $sql . " with binding " . $submittedValue . ", ". $optionId . ", ". $id . "failed (" . $statement->error . ")";
+			  }
 			}
 		  }
 		  else if (!empty($submittedValue))
 		  {
-		    $sql = "INSERT INTO " . $columnInfo->foreignTable . " (" 
-			    . $columnInfo->databaseName . ", " 
-				. $columnInfo->foreignTableReferenceColumn . ","
-				. $columnInfo->foreignColumn . ") VALUES (?,?,?)";
-	        $statement = $conn->prepare($sql);
-		    $statement->bind_param("sii", $submittedValue, $optionId, $id); 
-			if (!$statement->execute())
+			if ($columnInfo->foreignType == "multicolumn")
 			{
-			  echo "Execute of " . $sql . " with binding " . $submittedValue . ", ". $optionId . ", ". $id . "failed (" . $statement->error . ")";
-			}	
+		      $sql = "INSERT INTO " . $columnInfo->foreignTable . " (" 
+			      . $columnInfo->databaseName . ", " 
+				  . $columnInfo->foreignTableReferenceColumn . ","
+				  . $columnInfo->foreignColumn . ") VALUES (?,?,?)";
+	          $statement = $conn->prepare($sql);
+		      $statement->bind_param("sii", $submittedValue, $optionId, $id); 
+			  if (!$statement->execute())
+			  {
+			    echo "Execute of " . $sql . " with binding " . $submittedValue . ", ". $optionId . ", ". $id . "failed (" . $statement->error . ")";
+			  }
+            }			  
+			else
+			{
+		      $sql = "INSERT INTO " . $columnInfo->columnValuesTable 
+			      . " (" . $tableName . "_id, " . $columnInfo->foreignTable . "_id) "
+				  . "VALUES (". $id . ',' . $optionId . ')';
+			  $conn->query($sql);
+			  if ($conn->errno != null)
+	          {
+		        echo "error for " . $sql . ":" . $conn->error . "<br>";
+	          }
+			}
 		  }
-		  else
+		  else if ($columnInfo->foreignType == "multicolumn")
 		  {
 		    $sql = "DELETE FROM " . $columnInfo->foreignTable 
                 . " WHERE " . $columnInfo->foreignTableReferenceColumn . "=" . $optionId
 				. " AND " . $columnInfo->foreignColumn . "=" . $id;		 
 			$conn->query($sql);
+			if ($conn->errno != null)
+	        {
+		      echo "error for " . $sql . ":" . $conn->error . "<br>";
+	        }
+		  }
+		  else
+		  {
+		    $sql = "DELETE FROM " . $columnInfo->columnValuesTable 
+			    . " WHERE " . $tableName . '_id=' . $id . ' AND ' . $columnInfo->foreignTable . "_id=" . $optionId;
+			$conn->query($sql);
+			if ($conn->errno != null)
+	        {
+		      echo "error for " . $sql . ":" . $conn->error . "<br>";
+	        }
 		  }
 		}
 	  }
@@ -396,9 +478,13 @@ function doInserts($tableName, $columnInfos, $postData, $conn)
   $validationError = false;
   foreach ($columnInfos as $columnInfo)
   {
-	if ($columnInfo->foreignType != "multicolumn")
+	if ($columnInfo->foreignType != "multicolumn" && $columnInfo->foreignType != "nToM")
 	{
-	  ${'_'.$columnInfo->databaseName} = trim($postData[$columnInfo->databaseName]);
+	  ${'_'.$columnInfo->databaseName} = "";
+	  if (isset($postData[$columnInfo->databaseName]))
+	  {
+	    ${'_'.$columnInfo->databaseName} = trim($postData[$columnInfo->databaseName]);
+	  }
 	  if (!empty(${'_'.$columnInfo->databaseName}))
 	  {
 	    if (!isset($columnInfo->foreignType) || $columnInfo->foreignType == "dropdown")
@@ -433,7 +519,11 @@ function doInserts($tableName, $columnInfos, $postData, $conn)
 	  foreach ($optionsForRow as $optionId=>$optionDisplayName)
 	  {
 	    $inputName = $columnInfo->databaseName . '_' . $optionId;
-		$submittedValue = trim($postData[$inputName]);
+		$submittedValue = "";
+		if (isset($postData[$inputName]))
+		{
+		  $submittedValue = trim($postData[$inputName]);
+		}
         if (!empty($submittedValue))
 		{
 		  if (!isset($insertedMulticolumnValues[$columnInfo->databaseName]))
@@ -478,19 +568,37 @@ function doInserts($tableName, $columnInfos, $postData, $conn)
   {
     if (isset($insertedMulticolumnValues[$columnInfo->databaseName]))
     {
-	  $insertValues = $insertedMulticolumnValues[$columnInfo->databaseName];
-	  foreach ($insertValues as $optionId => $valueToInsert)
+	  if ($columnInfo->foreignType == "multicolumn")
 	  {
-		$sql = "INSERT INTO " . $columnInfo->foreignTable . " (" 
-			. $columnInfo->databaseName . ", " 
-			. $columnInfo->foreignTableReferenceColumn . ","
-			. $columnInfo->foreignColumn . ") VALUES (?,?,?)";
-		$statement = $conn->prepare($sql);
-		$statement->bind_param("sii", $valueToInsert, $optionId, $id); 
-		if (!$statement->execute())
-		{
-		  echo "Execute of " . $sql . " with binding " . $valueToInsert . ", ". $optionId . ", ". $id . "failed (" . $statement->error . ")";
-		}		
+	    $insertValues = $insertedMulticolumnValues[$columnInfo->databaseName];
+	    foreach ($insertValues as $optionId => $valueToInsert)
+	    {
+		  $sql = "INSERT INTO " . $columnInfo->foreignTable . " (" 
+			  . $columnInfo->databaseName . ", " 
+			  . $columnInfo->foreignTableReferenceColumn . ","
+			  . $columnInfo->foreignColumn . ") VALUES (?,?,?)";
+		  $statement = $conn->prepare($sql);
+		  $statement->bind_param("sii", $valueToInsert, $optionId, $id); 
+		  if (!$statement->execute())
+		  {
+		    echo "Execute of " . $sql . " with binding " . $valueToInsert . ", ". $optionId . ", ". $id . "failed (" . $statement->error . ")";
+		  }		
+	    }
+	  }
+	  else
+	  {
+	    $insertValues = $insertedMulticolumnValues[$columnInfo->databaseName];
+	    foreach ($insertValues as $optionId => $valueToInsert)
+	    {
+	      $sql = "INSERT INTO " . $columnInfo->columnValuesTable 
+		      . " (" . $tableName . "_id, " . $columnInfo->foreignTable . "_id) "
+		      . "VALUES (". $id . ',' . $optionId . ')';
+	      $conn->query($sql);
+	      if ($conn->errno != null)
+	      {
+		    echo "error for " . $sql . ":" . $conn->error . "<br>";
+	      }
+		}
 	  }
 	}
   }

@@ -17,8 +17,9 @@ class ColumnInfo
   public $foreignType; // possible values are "dropdown" for selection in a singleSelect, 
 					   // "text" for creating new entries in the foreign table with the given text
 					   // "multicolumn" for creating several entries at once associated with certain values in the foreign tables
+					   // "nToM" for a n-to-m-relationship between two tables
 
-  public $columnValuesTable; // for "multicolumn" only
+  public $columnValuesTable; // for "multicolumn" and "nToM" only
   
   public $columnValuesDescriptionColumn; // for "multicolumn" only
   
@@ -44,14 +45,17 @@ class ColumnInfo
     {
       $this->foreignTable = $args[4];
       $this->foreignColumn = $args[5];
-	  if ($args[6] != "dropdown" && $args[6] != "text" && $args[6] != "multicolumn")
+	  if ($args[6] != "dropdown" && $args[6] != "text" && $args[6] != "multicolumn" && $args[6] != "nToM")
 	  {
 		throw new Exception('foreignType must be one of "dropdown" or "text" or "multicolumn"');
 	  }
       $this->foreignType = $args[6];
-	  if ($args[6] == "multicolumn")
+	  if ($args[6] == "multicolumn" || $args[6] == "nToM")
 	  {
 		$this->columnValuesTable = $args[7];
+	  }
+	  if ($args[6] == "multicolumn")
+	  {
 		$this->columnValuesDescriptionColumn = $args[8];
 		$this->foreignTableReferenceColumn = $args[9];
 	  }
@@ -70,7 +74,7 @@ class ColumnInfo
     $result = array();
     foreach ($columnInfos as $columnInfo)
     {
-	  if ($columnInfo->foreignType != "multicolumn")
+	  if ($columnInfo->foreignType != "multicolumn" && $columnInfo->foreignType != "nToM")
 	  {
         array_push($result, $columnInfo->databaseName);
 	  }
