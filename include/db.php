@@ -262,12 +262,19 @@ function doUpdates($tableName, $row, $columnInfos, $postData, $conn)
 
   $id = $row["id"];
   $updatedValues = array();
+  $validationFailed = true;
   foreach ($columnInfos as $columnInfo)
   {
 	if ($columnInfo->foreignType != "multicolumn")
 	{
-      $dbValue = $row[$columnInfo->databaseName];
 	  $submittedValue = trim($postData[$columnInfo->databaseName . $id]);
+	  if ($columnInfo->required && empty($submittedValue))
+	  {
+		echo "Die Spalte " . $columnInfo->displayName . " in Datensatz Nr. " . $id . " ist ein Pflichtfeld und muss ausgefüllt werden. Der Datensatz wurde nicht gespeichert.<br/>";
+		$validationFailed = true;
+		continue;
+	  }
+      $dbValue = $row[$columnInfo->databaseName];	  
 	  if ($columnInfo->foreignType == "text")
 	  {
 	    $optionsForRow = $optionsForRows[$columnInfo->databaseName];
@@ -297,7 +304,7 @@ function doUpdates($tableName, $row, $columnInfos, $postData, $conn)
 	    }
 	  }
 	}
-	else
+	else if (!$validationFailed) // does not work in all cases, should collect all data before writing into db
 	{
 	  $optionsForRow = $optionsForRows[$columnInfo->databaseName];
 	  $dbValuesForRow = $valuesForMulticolumns[$columnInfo->databaseName];
@@ -348,7 +355,7 @@ function doUpdates($tableName, $row, $columnInfos, $postData, $conn)
 	  }
 	}
   }
-  if (count($updatedValues) > 0)
+  if (count($updatedValues) > 0 && !$validationFailed)
   {
 	$updateColumns = implode("=?,", array_keys($updatedValues));
 	$sql = "UPDATE " . $tableName . " SET " . $updateColumns . "=? WHERE ID=" . $id;
@@ -410,6 +417,22 @@ function doInserts($tableName, $columnInfos, $postData, $conn)
   }
   if (count($insertedValues) > 0 || count($insertedMulticolumnValues) > 0)
   {
+	$validationError = false;
+    foreach ($columnInfos as $columnInfo)
+	{
+	  if ($columnInfo->foreignType != "multicolumn")
+	  {
+	    if ($columnInfo->required && !isset($insertedValues[$columnInfo->databaseName]))
+		{
+		  echo "Die Spalte " . $columnInfo->displayName . " im neuen Datensatz ist ein Pflichtfeld und muss ausgefüllt werden. Der Datensatz wurde nicht gespeichert.<br/>";
+		  $validationError = true;
+		}
+	  }
+	}
+	if ($validationError)
+	{
+	  return;
+	}
 	$insertColumns = implode(",", array_keys($insertedValues));
 	$insertPlaceholders = implode(',', array_fill(0, count($insertedValues), '?'));
 	$sql = "INSERT INTO " . $tableName . "(" . $insertColumns . ") VALUES (" . $insertPlaceholders . ")";
