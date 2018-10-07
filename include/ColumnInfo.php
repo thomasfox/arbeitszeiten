@@ -1,17 +1,24 @@
 <?php
 class ColumnInfo
 {
-  public $databaseName;
+  public $databaseName; // name of the value column in the database. For "multicolumn": Column is in the foreign table. For others: column is in the current table.
   
   public $displayName;
   
-  public $foreignTable;
+  public $foreignTable; // foreign table containing the displayed value
   
-  public $foreignColumn;
+  public $foreignColumn;// for multicolumn: foreign-key-column in the foreign table containing the id of this table's row
+                        // for dropdown or text: foreign-key-column in this table containing the id of the foreign table's row
   
   public $foreignType; // possible values are "dropdown" for selection in a singleSelect, 
 					   // "text" for creating new entries in the foreign table with the given text
-					   // "multidropdown" for selection in a singleSelect but creating more than one entry in the displayed table at once
+					   // "multicolumn" for creating several entries at once associated with certain values in the foreign tables
+
+  public $columnValuesTable; // for "multicolumn" only
+  
+  public $columnValuesDescriptionColumn; // for "multicolumn" only
+  
+  public $foreignTableReferenceColumn; // for "multicolumn" only, contains the join column in the foreign table
 
   function __construct()
   {
@@ -25,11 +32,17 @@ class ColumnInfo
     {
       $this->foreignTable = $args[2];
       $this->foreignColumn = $args[3];
-	  if ($args[4] != "dropdown" && $args[4] != "text" && $args[4] != "multidropdown")
+	  if ($args[4] != "dropdown" && $args[4] != "text" && $args[4] != "multicolumn")
 	  {
-		throw new Exception('foreignType must be one of "dropdown" or "text" or "multidropdown"');
+		throw new Exception('foreignType must be one of "dropdown" or "text" or "multicolumn"');
 	  }
       $this->foreignType = $args[4];
+	  if ($args[4] == "multicolumn")
+	  {
+		$this->columnValuesTable = $args[5];
+		$this->columnValuesDescriptionColumn = $args[6];
+		$this->foreignTableReferenceColumn = $args[7];
+	  }
 	}
   }
   
@@ -45,7 +58,10 @@ class ColumnInfo
     $result = array();
     foreach ($columnInfos as $columnInfo)
     {
-      array_push($result, $columnInfo->databaseName);
+	  if ($columnInfo->foreignType != "multicolumn")
+	  {
+        array_push($result, $columnInfo->databaseName);
+	  }
     }
     return $result;
   }

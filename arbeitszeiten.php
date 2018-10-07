@@ -4,20 +4,20 @@
 <title>Unterseeschule - Arbeitszeit-Verwaltung</title>
 </head>
 <body>
-<h1>Verwaltung der Arbeitszeit</h1>
+<h1>Verwaltung der Arbeitsaufträge und Arbeitszeiten</h1>
 <?php
 include "include/config.php";
 include "include/db.php";
 
 $columnInfos = array(
-  new ColumnInfo("arbeitsauftrag_id", "Arbeitsauftrag", "arbeitsauftrag", "beschreibung", "text"),
+  new ColumnInfo("beschreibung", "Beschreibung"),
   new ColumnInfo("arbeitsgruppe_id", "Arbeitsgruppe", "arbeitsgruppe", "name", "dropdown"),
-  new ColumnInfo("minutes", "Arbeitszeit in Minuten"), 
-  new ColumnInfo("starttime", "Startdatum"),
-  new ColumnInfo("familie_id", "Familie", "familie", "name", "dropdown"));
+  new ColumnInfo("workdate", "Datum"),
+  new ColumnInfo("starttime", "Startzeit"),
+  new ColumnInfo("minutes", "Arbeitszeit in Minuten", "arbeitszeit", "arbeitsauftrag_id", "multicolumn", "familie", "name", "familie_id"));
 
-checkAnyRowDeleted("arbeitszeit", $columnInfos, $_POST, $conn);
-saveEditableTableData("arbeitszeit", $columnInfos, $_POST, $conn);
-columnDataAsEditableTable("arbeitszeit", $columnInfos, $conn);
+checkAnyRowDeleted("arbeitsauftrag", $columnInfos, $_POST, $conn);
+saveEditableTableData("arbeitsauftrag", $columnInfos, $_POST, $conn);
+columnDataAsEditableTable("arbeitsauftrag", $columnInfos, $conn);
 ?>
 </body>
