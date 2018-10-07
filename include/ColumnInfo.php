@@ -7,6 +7,8 @@ class ColumnInfo
   
   public $required = false;
   
+  public $datatype = "s";
+
   public $foreignTable; // foreign table containing the displayed value
   
   public $foreignColumn;// for multicolumn: foreign-key-column in the foreign table containing the id of this table's row
@@ -34,20 +36,24 @@ class ColumnInfo
 	{
 	  $this->required = $args[2];
 	}
-    if (count($args) > 3)
+	if (count($args) > 3)
+	{
+	  $this->datatype = $args[3];
+	}
+    if (count($args) > 4)
     {
-      $this->foreignTable = $args[3];
-      $this->foreignColumn = $args[4];
-	  if ($args[5] != "dropdown" && $args[5] != "text" && $args[5] != "multicolumn")
+      $this->foreignTable = $args[4];
+      $this->foreignColumn = $args[5];
+	  if ($args[6] != "dropdown" && $args[6] != "text" && $args[6] != "multicolumn")
 	  {
 		throw new Exception('foreignType must be one of "dropdown" or "text" or "multicolumn"');
 	  }
-      $this->foreignType = $args[5];
-	  if ($args[5] == "multicolumn")
+      $this->foreignType = $args[6];
+	  if ($args[6] == "multicolumn")
 	  {
-		$this->columnValuesTable = $args[6];
-		$this->columnValuesDescriptionColumn = $args[7];
-		$this->foreignTableReferenceColumn = $args[8];
+		$this->columnValuesTable = $args[7];
+		$this->columnValuesDescriptionColumn = $args[8];
+		$this->foreignTableReferenceColumn = $args[9];
 	  }
 	}
   }

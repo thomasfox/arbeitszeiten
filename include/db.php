@@ -188,6 +188,10 @@ function columnDataAsEditableTable($tableName, $columnInfos, $conn)
 		else
 		{
           $value = $row[$columnInfo->databaseName];
+		  if ($columnInfo->datatype == "d" and !empty($value))
+		  {
+			$value = DateTime::createFromFormat("Y-m-d", $value)->format("d.m.Y");
+		  }
 		  echo '<td><input name="'. $columnInfo->databaseName . $id . '" value="' . $value . '" /></td>';
 		}
 	  }
@@ -262,7 +266,7 @@ function doUpdates($tableName, $row, $columnInfos, $postData, $conn)
 
   $id = $row["id"];
   $updatedValues = array();
-  $validationFailed = true;
+  $validationFailed = false;
   foreach ($columnInfos as $columnInfo)
   {
 	if ($columnInfo->foreignType != "multicolumn")
@@ -275,7 +279,7 @@ function doUpdates($tableName, $row, $columnInfos, $postData, $conn)
 		continue;
 	  }
       $dbValue = $row[$columnInfo->databaseName];	  
-	  if ($columnInfo->foreignType == "text")
+	  if ($columnInfo->foreignType == "text" && !$validationFailed) // TODO does not work in all cases, we should collect all data before writing into db
 	  {
 	    $optionsForRow = $optionsForRows[$columnInfo->databaseName];
         if ($optionsForRow[$dbValue] != $submittedValue)
@@ -295,7 +299,21 @@ function doUpdates($tableName, $row, $columnInfos, $postData, $conn)
 	    {
 		  if (!empty($submittedValue))
 		  {
-	        $updatedValues[$columnInfo->databaseName] = $submittedValue;
+			if ($columnInfo->datatype == "d")
+			{
+			  $valueAsDate = DateTime::createFromFormat("d.m.Y", $submittedValue);
+			  if ($valueAsDate == false)
+			  {
+		        echo "Die Spalte " . $columnInfo->displayName . " in Datensatz Nr. " . $id . " hat ein ungültiges Datumsformat.  Bitte verwenden Die das Format TT.MM.JJJJ. Der Datensatz wurde nicht gespeichert.<br/>";
+		        $validationFailed = true;
+		        continue;
+			  }
+			  $updatedValues[$columnInfo->databaseName] = $valueAsDate->format("Y-m-d");
+			}
+			else
+			{
+	          $updatedValues[$columnInfo->databaseName] = $submittedValue;
+			}
 		  }
 		  else
 		  {
@@ -304,7 +322,7 @@ function doUpdates($tableName, $row, $columnInfos, $postData, $conn)
 	    }
 	  }
 	}
-	else if (!$validationFailed) // does not work in all cases, should collect all data before writing into db
+	else if (!$validationFailed) // TODO does not work in all cases, we should collect all data before writing into db
 	{
 	  $optionsForRow = $optionsForRows[$columnInfo->databaseName];
 	  $dbValuesForRow = $valuesForMulticolumns[$columnInfo->databaseName];
@@ -375,6 +393,7 @@ function doInserts($tableName, $columnInfos, $postData, $conn)
   $optionsForRows = getOptionsForRows($columnInfos, $conn);
   $insertedValues = array();
   $insertedMulticolumnValues = array();
+  $validationError = false;
   foreach ($columnInfos as $columnInfo)
   {
 	if ($columnInfo->foreignType != "multicolumn")
@@ -385,6 +404,17 @@ function doInserts($tableName, $columnInfos, $postData, $conn)
 	    if (!isset($columnInfo->foreignType) || $columnInfo->foreignType == "dropdown")
 	    {
 	      $insertedValues[$columnInfo->databaseName] = &${'_'.$columnInfo->databaseName};
+		  if ($columnInfo->datatype == "d" and !empty($insertedValues[$columnInfo->databaseName]))
+		  {
+		    $valueAsDate = DateTime::createFromFormat("d.m.Y", $insertedValues[$columnInfo->databaseName]);
+			if ($valueAsDate == false)
+			{
+		      echo "Die Spalte " . $columnInfo->displayName . " im neuen Datensatz hat ein ungültiges Datumsformat. Bitte verwenden Die das Format TT.MM.JJJJ. Der Datensatz wurde nicht gespeichert.<br/>";
+		      $validationError = true;
+		      continue;
+			}
+			$insertedValues[$columnInfo->databaseName] = $valueAsDate->format("Y-m-d");
+		  }
 	    }
 	    else if ($columnInfo->foreignType == "text")
 	    {
@@ -415,9 +445,8 @@ function doInserts($tableName, $columnInfos, $postData, $conn)
 	  }
 	}
   }
-  if (count($insertedValues) > 0 || count($insertedMulticolumnValues) > 0)
+  if (count($insertedValues) > 0 || count($insertedMulticolumnValues) > 0 && !$validationError)
   {
-	$validationError = false;
     foreach ($columnInfos as $columnInfo)
 	{
 	  if ($columnInfo->foreignType != "multicolumn")
@@ -441,7 +470,7 @@ function doInserts($tableName, $columnInfos, $postData, $conn)
 	$statement->bind_param($types, ...array_values($insertedValues)); 
 	if (!$statement->execute())
 	{
-	  echo "Execute of " . $sql . " with binding " . types . ", ". implode(", ", $array_values($insertedValues)) . "failed (" . $statement->error . ")";
+	  echo "Execute of " . $sql . " with binding " . $types . ", ". implode(", ", array_values($insertedValues)) . "failed (" . $statement->error . ")";
 	}
 	$id = $conn->insert_id;
   }
