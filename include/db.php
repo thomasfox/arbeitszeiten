@@ -7,139 +7,52 @@ if ($conn->connect_error)
 
 include('ColumnInfo.php');
 
-function columnDataAsTable($tableName, $columnInfos, $conn)
+/**
+ * Returns the possible values for the columns in the form
+ * array($databaseName of column => array(optionId => optionDisplayName))
+ *
+ * $columns array of ColumnInfo objects
+ * $conn mysql connection
+ */
+function getOptionsToSelectFrom($columns, $conn)
 {
-  $columnNames = ColumnInfo::getDatabaseNames($columnInfos);
-  $concatenatedColumnNames = implode(",", $columnNames);
-
-  $sql = "SELECT id," . $concatenatedColumnNames . " FROM " . $tableName . " ORDER BY id ASC";
-  $result = $conn->query($sql);
-  echo "<tr>";
-  foreach ($columnNames as $columnName)
+  $result = array();
+  foreach ($columns as $column)
   {
-    echo "<td>" . $columnName . "</td>";
+	$optionsForColumn = $column->getSelectOptions($conn);
+	if (!is_null($optionsForColumn))
+	{
+	  $result[$column->databaseName] = $optionsForColumn;
+	}
   }
-  echo "</tr>";
-  if ($conn->errno == 0 && $result->num_rows > 0)
-  {
-    while($row = $result->fetch_assoc()) 
-    {
-      echo "<tr>";
-	  foreach ($columnNames as $columnName)
-      {
-        $value = $row[$columnName];
-		echo "<td>" . $value . "</td>";
-	  }
-      echo "</tr>";
-    }
-  }
-  else
-  {
-    echo "no result for " . $sql . "<br>";
-  }
+  return $result;
 }
 
-function getOptionsForRows($columnInfos, $conn)
+/**
+ * Returns the select options for a column, in the form
+ * array($databaseName of column => array(id of record in this table => array(id of selectOption => value)))
+ *
+ * @param $tableName the name of the table which contains the displayed rows.
+ * $columns array of ColumnInfo objects
+ * $conn mysql connection
+ */
+function getValuesForMulticolumns($tableName, $columns, $conn)
 {
-  // $databaseName of column => array(optionId => optionDisplayName)
-  $optionsForRows = array();
-  foreach ($columnInfos as $columnInfo)
+  $result = array();
+  foreach ($columns as $column)
   {
-	if (isset($columnInfo->foreignType))
+	$columnValues = $column->getMulticolumnValues($tableName, $conn);
+	if (!is_null($columnValues))
 	{
-	  if ($columnInfo->foreignType == "dropdown" || $columnInfo->foreignType == "text" || $columnInfo->foreignType == "nToM")
-	  {
-	    $descriptionColumn = $columnInfo->foreignColumn;
-        $optionsTable = $columnInfo->foreignTable;
-	  }
-      else if ($columnInfo->foreignType == "multicolumn")
-	  {
-	    $descriptionColumn = $columnInfo->columnValuesDescriptionColumn;
-        $optionsTable = $columnInfo->columnValuesTable;
-	  }
-	  $sql = "SELECT id," . $descriptionColumn . " FROM " . $optionsTable . " ORDER BY id ASC";
-      $result = $conn->query($sql);
-	  if ($conn->errno == 0)
-	  {
-		$optionsForRow = array();
-		while ($row = $result->fetch_assoc()) 
-		{
-		  $optionsForRow[$row["id"]] = $row[$descriptionColumn];
-		}
-		$optionsForRows[$columnInfo->databaseName] = $optionsForRow;
-	  }
-	  else
-	  {
-		echo "error for " . $sql . ":" . $conn->error . "<br>";
-	  }
+	  $result[$column->databaseName] = $columnValues;
 	}
   }
-  return $optionsForRows;
-}
-
-function getValuesForMulticolumns($tableName, $columnInfos, $conn)
-{
-  // $databaseName of column => array(id of record in this table => (id of column => array(value)))
-  $valuesForMulticolumns = array();
-  foreach ($columnInfos as $columnInfo)
-  {
-	if ($columnInfo->foreignType == "multicolumn")
-	{
-	  $columnsToSelect = $tableName . ".id as id, " 
-			. $columnInfo->foreignTable . "." . $columnInfo->foreignTableReferenceColumn . " as columnid," 
-			. $columnInfo->foreignTable . '.id as foreignid,'
-			. $columnInfo->foreignTable . '.' . $columnInfo->databaseName. " as foreignvalue";
-	  $fromClause = $tableName . " JOIN " . $columnInfo->foreignTable . " ON " . $tableName . ".id=" . $columnInfo->foreignTable . "." . $columnInfo->foreignColumn;
-	  $sql = "SELECT " . $columnsToSelect . " FROM " . $fromClause . " ORDER BY id,foreignid ASC";
-      $result = $conn->query($sql);
-	  if ($conn->errno == 0)
-	  {
-		$valuesForMulticolumn = array();
-		while ($row = $result->fetch_assoc()) 
-		{
-		  if (!isset($valuesForMulticolumn[$row["id"]]))
-		  {
-			$valuesForMulticolumn[$row["id"]] = array(); 
-		  }
-		  $valuesForMulticolumn[$row["id"]][$row["columnid"]] = $row["foreignvalue"];
-		}
-		$valuesForMulticolumns[$columnInfo->databaseName] = $valuesForMulticolumn;
-	  }
-	  else
-	  {
-		echo "error for " . $sql . ":" . $conn->error . "<br>";
-	  }
-	}
-	else if ($columnInfo->foreignType == "nToM")
-	{
-	  $columnsToSelect = $tableName . "_id, " . $columnInfo->foreignTable . "_id";
-	  $sql = "SELECT " . $columnsToSelect . " FROM " . $columnInfo->columnValuesTable;
-      $result = $conn->query($sql);
-	  if ($conn->errno == 0)
-	  {
-		$valuesForMulticolumn = array();
-		while ($row = $result->fetch_assoc()) 
-		{
-		  if (!isset($valuesForMulticolumn[$row[$tableName . "_id"]]))
-		  {
-			$valuesForMulticolumn[$row[$tableName . "_id"]] = array(); 
-		  }
-		  $valuesForMulticolumn[$row[$tableName . "_id"]][$row[$columnInfo->foreignTable . "_id"]] = "1";
-		}
-		$valuesForMulticolumns[$columnInfo->databaseName] = $valuesForMulticolumn;
-	  }
-	  else
-	  {
-		echo "error for " . $sql . ":" . $conn->error . "<br>";
-	  }
-	}
-  }
-  return $valuesForMulticolumns;
+  return $result;
 }
 
 function columnDataAsEditableTable($tableName, $columnInfos, $conn)
 {
-  $optionsForRows = getOptionsForRows($columnInfos, $conn);
+  $optionsForRows = getOptionsToSelectFrom($columnInfos, $conn);
   $valuesForMulticolumns = getValuesForMulticolumns($tableName, $columnInfos, $conn);
   $columnNames = ColumnInfo::getDatabaseNames($columnInfos);
   $concatenatedColumnNames = implode(",", $columnNames);
@@ -308,7 +221,7 @@ function saveEditableTableData($tableName, $columnInfos, $postData, $conn)
 
 function doUpdates($tableName, $row, $columnInfos, $postData, $conn)
 {
-  $optionsForRows = getOptionsForRows($columnInfos, $conn);
+  $optionsForRows = getOptionsToSelectFrom($columnInfos, $conn);
   $valuesForMulticolumns = getValuesForMulticolumns($tableName, $columnInfos, $conn);
 
   $id = $row["id"];
@@ -472,7 +385,7 @@ function doUpdates($tableName, $row, $columnInfos, $postData, $conn)
 
 function doInserts($tableName, $columnInfos, $postData, $conn)
 {
-  $optionsForRows = getOptionsForRows($columnInfos, $conn);
+  $optionsForRows = getOptionsToSelectFrom($columnInfos, $conn);
   $insertedValues = array();
   $insertedMulticolumnValues = array();
   $validationError = false;

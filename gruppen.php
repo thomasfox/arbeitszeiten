@@ -9,7 +9,7 @@
 include "include/config.php";
 include "include/db.php";
 
-$columnInfos = array(new ColumnInfo("name", "Name", true));
+$columnInfos = array(new SimpleValueColumn("name", "Name", true));
 
 checkAnyRowDeleted("arbeitsgruppe", $columnInfos, $_POST, $conn);
 saveEditableTableData("arbeitsgruppe", $columnInfos, $_POST, $conn);
