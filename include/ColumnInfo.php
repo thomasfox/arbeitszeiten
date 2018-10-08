@@ -118,6 +118,29 @@ abstract class ColumnInfo
    * @param $conn the mysql connection.
    */
   public abstract function getMulticolumnValues($tableName, $conn);
+  
+  /**
+   * Prints the column headers for the given options.
+   *
+   * @param $optionsToSelectFrom the options for this column, as array(column's database name => array(optionKey => optiondisplayName)).
+   */   
+  public abstract function printColumnHeaders($optionsToSelectFrom);
+  
+  /**
+   * Prints the columns of one database row.
+   *
+   * @param $row the database row's content, as array(databaseColumnName => databaseValue).
+   * @param $optionsToSelectFrom the options for this column, as array(column's database name => array(optionKey => optiondisplayName)).
+   * @param $valuesForMulticolumns values for the multicolumn, as array(column's database name => array(id of record in this table => array(id of selectOption => value)).
+   */   
+  public abstract function printColumnsForRow($row, $optionsToSelectFrom, $valuesForMulticolumns);
+
+  /**
+   * Prints the columns for the row where a new database row can be created.
+   *
+   * @param $optionsToSelectFrom the options for this column, as array(column's database name => array(optionKey => optiondisplayName)).
+   */   
+  public abstract function printColumnsForNewRow($optionsToSelectFrom);
 }
 
 class SimpleValueColumn extends ColumnInfo
@@ -141,6 +164,27 @@ class SimpleValueColumn extends ColumnInfo
   {
 	return null;
   }
+  
+  function printColumnHeaders($optionsToSelectFrom)
+  {
+    echo "<td>" . $this->getDisplayName() . "</td>";
+  }
+  
+  function printColumnsForRow($row, $optionsToSelectFrom, $valuesForMulticolumns)
+  {
+	$id = $row["id"];
+    $value = $row[$this->databaseName];
+    if ($this->datatype == "d" and !empty($value))
+    {
+      $value = DateTime::createFromFormat("Y-m-d", $value)->format("d.m.Y");
+    }
+    echo '<td><input name="'. $this->databaseName . $id . '" value="' . $value . '" /></td>';
+  }
+  
+  function printColumnsForNewRow($optionsToSelectFrom)
+  {
+    echo '<td><input name="'. $this->databaseName . '"/></td>';
+  }
 }
 
 class DropdownColumn extends ColumnInfo
@@ -163,6 +207,42 @@ class DropdownColumn extends ColumnInfo
   function getMulticolumnValues($tableName, $conn)
   {
 	return null;
+  }
+  
+  function printColumnHeaders($optionsToSelectFrom)
+  {
+    echo "<td>" . $this->getDisplayName() . "</td>";
+  }
+
+  function printColumnsForRow($row, $optionsToSelectFrom, $valuesForMulticolumns)
+  {
+	$id = $row["id"];
+    $value = $row[$this->databaseName];
+    echo '<td><select name="'. $this->databaseName . $id . '">';
+    echo '<option value=""></option>"';
+    $optionsForColumn = $optionsToSelectFrom[$this->databaseName];
+    foreach ($optionsForColumn as $optionId => $optionDisplayName)
+    {
+	  $selectedString = "";
+	  if ($value == $optionId)
+	  {
+	    $selectedString = ' selected="selected"';
+      }
+	  echo '<option value="' . $optionId . '"' . $selectedString . '>' . $optionDisplayName . '</option>';
+    }
+    echo '</select></td>';
+  }
+  
+  function printColumnsForNewRow($optionsToSelectFrom)
+  {
+    echo '<td><select name="'. $this->databaseName . '">"';
+    echo '<option value=""></option>"';
+    $optionsForColumn = $optionsToSelectFrom[$this->databaseName];
+    foreach ($optionsForColumn as $optionId=>$optionDisplayName)
+    {
+	  echo '<option value="' . $optionId . '">' . $optionDisplayName . '</option>"';
+    }
+    echo '</select></td>';
   }
 }
 
@@ -210,6 +290,41 @@ class StringMulticolumn extends ColumnInfo
       echo "error for " . $sql . ":" . $conn->error . "<br>";
     }
   }
+  
+  function printColumnHeaders($optionsToSelectFrom)
+  {
+    foreach ($optionsToSelectFrom[$this->databaseName] as $displayName)
+	{
+      echo "<td>" . $displayName . "</td>";
+	}
+  }
+  
+  function printColumnsForRow($row, $optionsToSelectFrom, $valuesForMulticolumns)
+  {
+	$id = $row["id"];
+    $optionsForColumn = $optionsToSelectFrom[$this->databaseName];
+    $valuesForColumn = $valuesForMulticolumns[$this->databaseName];
+    foreach ($optionsForColumn as $optionId => $optionDisplayName)
+    {
+	  $inputName = $this->databaseName . $id . '_' . $optionId;
+	  $inputValue = "";
+	  if (isset($valuesForColumn[$id][$optionId]))
+	  {
+	    $inputValue = $valuesForColumn[$id][$optionId];
+	  }
+      echo '<td><input name="'. $inputName . '" value="' . $inputValue . '" /></td>';
+    }
+  }
+  
+  function printColumnsForNewRow($optionsToSelectFrom)
+  {
+    $optionsForColumn = $optionsToSelectFrom[$this->databaseName];
+	foreach ($optionsForColumn as $optionId => $optionDisplayName)
+	{
+	  $inputName = $this->databaseName . '_' . $optionId;
+	  echo '<td><input name="'. $inputName . '" /></td>';
+	}
+  }
 }
 
 class CheckboxMulticolumn extends ColumnInfo
@@ -251,6 +366,41 @@ class CheckboxMulticolumn extends ColumnInfo
     {
       echo "error for " . $sql . ":" . $conn->error . "<br>";
     }
+  }
+
+  function printColumnHeaders($optionsToSelectFrom)
+  {
+    foreach ($optionsToSelectFrom[$this->databaseName] as $displayName)
+	{
+      echo "<td>" . $displayName . "</td>";
+	}
+  }
+  
+  function printColumnsForRow($row, $optionsToSelectFrom, $valuesForMulticolumns)
+  {
+	$id = $row["id"];
+    $optionsForColumn = $optionsToSelectFrom[$this->databaseName];
+    $valuesForColumn = $valuesForMulticolumns[$this->databaseName];
+    foreach ($optionsForColumn as $optionId=>$optionDisplayName)
+    {
+	  $inputName = $this->databaseName . $id . '_' . $optionId;
+	  $checkedString = "";
+	  if (isset($valuesForColumn[$id][$optionId]))
+	  {
+	    $checkedString = ' checked="checked"';
+	  }
+	  echo '<td><input type="checkbox" name="'. $inputName . '" value="1" ' . $checkedString . '/></td>';
+    }
+  }
+  
+  function printColumnsForNewRow($optionsToSelectFrom)
+  {
+	$optionsForColumn = $optionsToSelectFrom[$this->databaseName];
+	foreach ($optionsForColumn as $optionId => $optionDisplayName)
+	{
+	  $inputName = $this->databaseName . '_' . $optionId;
+	  echo '<td><input type="checkbox" name="'. $inputName . '" value="1" /></td>';
+	}
   }
 }
 
