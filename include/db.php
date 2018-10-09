@@ -414,18 +414,6 @@ function checkDeleteRow($tableName, $id, $columnInfos, $postData, $conn)
 {
   if ($postData["delete"] == $id)
   {
-    foreach ($columnInfos as $columnInfo)
-    {
-	  if ($columnInfo->foreignType == "multicolumn")
-	  {
-	    $sql = "DELETE FROM ". $columnInfo->foreignTable . " WHERE " . $columnInfo->foreignColumn . "=" . $id;
-        $conn->query($sql);
-	    if ($conn->errno != 0)
-	    {
-	      echo "Execute of " . $sql . "failed (" . $conn->error . ")";
-	    }
-	  }
-    }
     $sql = "DELETE FROM ". $tableName . " WHERE ID=" . $id;
     $conn->query($sql);
     if ($conn->errno != 0)
