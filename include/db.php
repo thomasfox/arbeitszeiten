@@ -54,7 +54,7 @@ function columnDataAsEditableTable($tableName, $columnInfos, $conn)
 {
   $optionsToSelectFrom = getOptionsToSelectFrom($columnInfos, $conn);
   $valuesForMulticolumns = getValuesForMulticolumns($tableName, $columnInfos, $conn);
-  $columnNames = ColumnInfo::getDatabaseNames($columnInfos);
+  $columnNames = ColumnInfo::getColumnsOfMainTable($columnInfos);
   $concatenatedColumnNames = implode(",", $columnNames);
   $sql = "SELECT id," . $concatenatedColumnNames . " FROM " . $tableName . " ORDER BY id ASC";
   $result = $conn->query($sql);
@@ -98,7 +98,7 @@ function saveEditableTableData($tableName, $columnInfos, $postData, $conn)
     return;
   }
 
-  $columnNames = ColumnInfo::getDatabaseNames($columnInfos);
+  $columnNames = ColumnInfo::getColumnsOfMainTable($columnInfos);
   $concatenatedColumnNames = implode(",", $columnNames);
   $sql = "SELECT id," . $concatenatedColumnNames . " FROM " . $tableName . " ORDER BY id ASC";
   $result = $conn->query($sql);
@@ -141,21 +141,7 @@ function doUpdates($tableName, $row, $columnInfos, $postData, $conn)
 	    {
 		  if (!empty($submittedValue))
 		  {
-			if ($columnInfo->datatype == "d")
-			{
-			  $valueAsDate = DateTime::createFromFormat("d.m.Y", $submittedValue);
-			  if ($valueAsDate == false)
-			  {
-		        echo "Die Spalte " . $columnInfo->displayName . " in Datensatz Nr. " . $id . " hat ein ungültiges Datumsformat.  Bitte verwenden Die das Format TT.MM.JJJJ. Der Datensatz wurde nicht gespeichert.<br/>";
-		        $validationFailed = true;
-		        continue;
-			  }
-			  $updatedValues[$columnInfo->databaseName] = $valueAsDate->format("Y-m-d");
-			}
-			else
-			{
-	          $updatedValues[$columnInfo->databaseName] = $submittedValue;
-			}
+	        $updatedValues[$columnInfo->databaseName] = $columnInfo->getDatabaseValue($submittedValue, $validationFailed);
 		  }
 		  else
 		  {
@@ -183,19 +169,16 @@ function doUpdates($tableName, $row, $columnInfos, $postData, $conn)
 		}
 		if ($dbValue != $submittedValue)
 		{
-		  if (isset($dbValuesForRow[$id][$optionId]) && !empty($submittedValue) && $columnInfo->foreignType != "multicolumn")
+		  if (isset($dbValuesForRow[$id][$optionId]) && !empty($submittedValue) && $columnInfo->foreignType == "multicolumn")
 		  {
-			if ($columnInfo->foreignType != "multicolumn")
+		    $sql = "UPDATE " . $columnInfo->foreignTable . " SET " . $columnInfo->databaseName . "=? " 
+			    . "WHERE " . $columnInfo->foreignTableReferenceColumn . "=? "
+			    . "AND " . $columnInfo->foreignColumn . "=?";
+	        $statement = $conn->prepare($sql);
+		    $statement->bind_param("sii", $submittedValue, $optionId, $id); 
+			if (!$statement->execute())
 			{
-		      $sql = "UPDATE " . $columnInfo->foreignTable . " SET " . $columnInfo->databaseName . "=? " 
-				  . "WHERE " . $columnInfo->foreignTableReferenceColumn . "=? "
-				  . "AND " . $columnInfo->foreignColumn . "=?";
-	          $statement = $conn->prepare($sql);
-		      $statement->bind_param("sii", $submittedValue, $optionId, $id); 
-			  if (!$statement->execute())
-			  {
-			    echo "Execute of " . $sql . " with binding " . $submittedValue . ", ". $optionId . ", ". $id . "failed (" . $statement->error . ")";
-			  }
+			  echo "Execute of " . $sql . " with binding " . $submittedValue . ", ". $optionId . ", ". $id . "failed (" . $statement->error . ")";
 			}
 		  }
 		  else if (!empty($submittedValue))
@@ -268,58 +251,13 @@ function doInserts($tableName, $columnInfos, $postData, $conn)
 {
   $optionsForRows = getOptionsToSelectFrom($columnInfos, $conn);
   $insertedValues = array();
-  $insertedMulticolumnValues = array();
+  $multicolumnValuesToInsert = array();
   $validationError = false;
   foreach ($columnInfos as $columnInfo)
   {
-	if ($columnInfo->foreignType != "multicolumn" && $columnInfo->foreignType != "nToM")
-	{
-	  ${'_'.$columnInfo->databaseName} = "";
-	  if (isset($postData[$columnInfo->databaseName]))
-	  {
-	    ${'_'.$columnInfo->databaseName} = trim($postData[$columnInfo->databaseName]);
-	  }
-	  if (!empty(${'_'.$columnInfo->databaseName}))
-	  {
-	    {
-	      $insertedValues[$columnInfo->databaseName] = &${'_'.$columnInfo->databaseName};
-		  if ($columnInfo->datatype == "d" and !empty($insertedValues[$columnInfo->databaseName]))
-		  {
-		    $valueAsDate = DateTime::createFromFormat("d.m.Y", $insertedValues[$columnInfo->databaseName]);
-			if ($valueAsDate == false)
-			{
-		      echo "Die Spalte " . $columnInfo->displayName . " im neuen Datensatz hat ein ungültiges Datumsformat. Bitte verwenden Die das Format TT.MM.JJJJ. Der Datensatz wurde nicht gespeichert.<br/>";
-		      $validationError = true;
-		      continue;
-			}
-			$insertedValues[$columnInfo->databaseName] = $valueAsDate->format("Y-m-d");
-		  }
-	    }
-	  }
-    }
-	else
-	{
-	  $optionsForRow = $optionsForRows[$columnInfo->databaseName];
-	  foreach ($optionsForRow as $optionId=>$optionDisplayName)
-	  {
-	    $inputName = $columnInfo->databaseName . '_' . $optionId;
-		$submittedValue = "";
-		if (isset($postData[$inputName]))
-		{
-		  $submittedValue = trim($postData[$inputName]);
-		}
-        if (!empty($submittedValue))
-		{
-		  if (!isset($insertedMulticolumnValues[$columnInfo->databaseName]))
-		  {
-			$insertedMulticolumnValues[$columnInfo->databaseName] = array();
-		  }
-		  $insertedMulticolumnValues[$columnInfo->databaseName][$optionId] = $submittedValue;
-		}
-	  }
-	}
+    $columnInfo->getValuesToInsert($postData, $insertedValues, $multicolumnValuesToInsert, $validationError, $conn);
   }
-  if (count($insertedValues) > 0 || count($insertedMulticolumnValues) > 0 && !$validationError)
+  if (count($insertedValues) > 0 || count($multicolumnValuesToInsert) > 0 && !$validationError)
   {
     foreach ($columnInfos as $columnInfo)
 	{
@@ -347,44 +285,10 @@ function doInserts($tableName, $columnInfos, $postData, $conn)
 	  echo "Execute of " . $sql . " with binding " . $types . ", ". implode(", ", array_values($insertedValues)) . "failed (" . $statement->error . ")";
 	}
 	$id = $conn->insert_id;
-  }
-  foreach ($columnInfos as $columnInfo)
-  {
-    if (isset($insertedMulticolumnValues[$columnInfo->databaseName]))
+    foreach ($columnInfos as $columnInfo)
     {
-	  if ($columnInfo->foreignType == "multicolumn")
-	  {
-	    $insertValues = $insertedMulticolumnValues[$columnInfo->databaseName];
-	    foreach ($insertValues as $optionId => $valueToInsert)
-	    {
-		  $sql = "INSERT INTO " . $columnInfo->foreignTable . " (" 
-			  . $columnInfo->databaseName . ", " 
-			  . $columnInfo->foreignTableReferenceColumn . ","
-			  . $columnInfo->foreignColumn . ") VALUES (?,?,?)";
-		  $statement = $conn->prepare($sql);
-		  $statement->bind_param("sii", $valueToInsert, $optionId, $id); 
-		  if (!$statement->execute())
-		  {
-		    echo "Execute of " . $sql . " with binding " . $valueToInsert . ", ". $optionId . ", ". $id . "failed (" . $statement->error . ")";
-		  }		
-	    }
-	  }
-	  else
-	  {
-	    $insertValues = $insertedMulticolumnValues[$columnInfo->databaseName];
-	    foreach ($insertValues as $optionId => $valueToInsert)
-	    {
-	      $sql = "INSERT INTO " . $columnInfo->columnValuesTable 
-		      . " (" . $tableName . "_id, " . $columnInfo->foreignTable . "_id) "
-		      . "VALUES (". $id . ',' . $optionId . ')';
-	      $conn->query($sql);
-	      if ($conn->errno != null)
-	      {
-		    echo "error for " . $sql . ":" . $conn->error . "<br>";
-	      }
-		}
-	  }
-	}
+      $columnInfo->insertMulticolumnValues($multicolumnValuesToInsert, $tableName, $id, $conn);
+    }
   }
 }
 

@@ -68,14 +68,12 @@ abstract class ColumnInfo
     return $this->databaseName;
   }
   
-  abstract function addToDatabaseNames();
-
-  static function getDatabaseNames($columnInfos)
+  public static function getColumnsOfMainTable($columnInfos)
   {
     $result = array();
     foreach ($columnInfos as $columnInfo)
     {
-	  if ($columnInfo->addToDatabaseNames())
+	  if ($columnInfo->addToMainTableColumns())
 	  {
         array_push($result, $columnInfo->databaseName);
 	  }
@@ -84,31 +82,17 @@ abstract class ColumnInfo
   }
   
   /**
+   * Returns true if this ColumnInfo is represented by a database column in the main table of the displayed data, false otherwise.
+   */
+  public abstract function addToMainTableColumns();
+
+  /**
    * Returns the select options for a column, as array($key=>$DisplayName).
    * If the column does not have any select options, returns null.
    *
    * @param $conn the mysql connection.
    */
   public abstract function getSelectOptions($conn);
-  
-  protected function querySelectOptions($descriptionColumn, $table, $conn)
-  {
-    $sql = "SELECT id," . $descriptionColumn . " FROM " . $table . " ORDER BY id ASC";
-    $result = $conn->query($sql);
-    if ($conn->errno == 0)
-    {
-   	  $selectOptions = array();
-      while ($row = $result->fetch_assoc()) 
-      {
-        $selectOptions[$row["id"]] = $row[$descriptionColumn];
-      }
-    }
-    else
-    {
-      echo "error for " . $sql . ":" . $conn->error . "<br>";
-	}
-	return $selectOptions;
-  }
   
   /**
    * Returns the select options for a column, as array(id of record in this table => array(id of selectOption => value))
@@ -141,6 +125,55 @@ abstract class ColumnInfo
    * @param $optionsToSelectFrom the options for this column, as array(column's database name => array(optionKey => optiondisplayName)).
    */   
   public abstract function printColumnsForNewRow($optionsToSelectFrom);
+  
+  /**
+   * Performs any necessary modifications to a submitted value to be stored in the database, and returns the database value.
+   *
+   * @param submittedValue the value submitted by the user, already trimmed.   
+   * @param &$validationFailed flag which is set to true if a validation error occurs.
+   */
+  public abstract function getDatabaseValue($submittedValue, &$validationFailed);
+
+  /**
+   * Determines the values to insert and stores them in &$insertedValues and &$insertedMulticolumnValues, respectively.
+   * If validation errors occur, they are printed and &$validationFailed is set to true.
+   *
+   * @param $postData the data submitted by the user
+   * @param &$insertedValues the values to be inserted into the column's table, in the form (databaseName of column => valueToSave)
+   * @param &$multicolumnValuesToInsert the values to be inserted in the column's referenced table, in the form (databaseName of column => array(optionKey => valueToSave))
+   * @param &$validationFailed flag which is set to true if a validation error occurs.
+   * @param $conn the mysql database connection.
+   */
+  public abstract function getValuesToInsert($postData, &$insertedValues, &$multicolumnValuesToInsert, &$validationFailed, $conn);
+  
+  /**
+   * Inserts values in the referenced foreign table.
+   *
+   * @param $multicolumnValuesToInsert the values to insert for the options, in the form array (databaseName of column => array(optionKey => valueToSave))
+   * @param $tableNameForRow the name of the table in which the inserted row is located.
+   * @param $idOfMainRow the id of the dataset in the table representing the inserted row. 
+   * @param $conn the database connection.
+   */   
+  public abstract function insertMulticolumnValues($multicolumnValuesToInsert, $tableNameForRow, $idOfRow, $conn);
+  
+  protected function querySelectOptions($descriptionColumn, $table, $conn)
+  {
+    $sql = "SELECT id," . $descriptionColumn . " FROM " . $table . " ORDER BY id ASC";
+    $result = $conn->query($sql);
+    if ($conn->errno == 0)
+    {
+   	  $selectOptions = array();
+      while ($row = $result->fetch_assoc()) 
+      {
+        $selectOptions[$row["id"]] = $row[$descriptionColumn];
+      }
+    }
+    else
+    {
+      echo "error for " . $sql . ":" . $conn->error . "<br>";
+	}
+	return $selectOptions;
+  }
 }
 
 class SimpleValueColumn extends ColumnInfo
@@ -150,7 +183,7 @@ class SimpleValueColumn extends ColumnInfo
 	parent::__construct($databaseName, $displayName, $required, $dataType);
   }
   
-  function addToDatabaseNames()
+  function addToMainTableColumns()
   {
 	return true;
   }
@@ -185,6 +218,42 @@ class SimpleValueColumn extends ColumnInfo
   {
     echo '<td><input name="'. $this->databaseName . '"/></td>';
   }
+
+  function getDatabaseValue($submittedValue, &$validationFailed)
+  {
+	if ($this->datatype == "d" && !empty($submittedValue))
+	{
+	  $valueAsDate = DateTime::createFromFormat("d.m.Y", $submittedValue);
+	  if ($valueAsDate == false)
+	  {
+		echo "Die Spalte " . $this->displayName . " in Datensatz Nr. " . $id . " hat ein ungültiges Datumsformat.  Bitte verwenden Die das Format TT.MM.JJJJ. Der Datensatz wurde nicht gespeichert.<br/>";
+		$validationFailed = true;
+		return null;
+	  }
+	  return $valueAsDate->format("Y-m-d");
+	}
+	else
+	{
+	  return $submittedValue;
+	}
+  }
+
+  function getValuesToInsert($postData, &$insertedValues, &$multicolumnValuesToInsert, &$validationFailed, $conn)
+  {
+	$valueToInsert = "";
+	if (isset($postData[$this->databaseName]))
+	{
+	  $valueToInsert = trim($postData[$this->databaseName]);
+	}
+	if (!empty($valueToInsert))
+	{
+	  $insertedValues[$this->databaseName] = getDatabaseValue($submittedValue, $validationFailed);
+	}
+  }
+  
+  function insertMulticolumnValues($multicolumnValuesToInsert, $tableNameForRow, $idOfRow, $conn)
+  {
+  }
 }
 
 class DropdownColumn extends ColumnInfo
@@ -194,7 +263,7 @@ class DropdownColumn extends ColumnInfo
 	parent::__construct($databaseName, $displayName, $required, $dataType, $foreignTable, $foreignColumn, "dropdown");
   }
   
-  function addToDatabaseNames()
+  function addToMainTableColumns()
   {
 	return true;
   }
@@ -244,16 +313,68 @@ class DropdownColumn extends ColumnInfo
     }
     echo '</select></td>';
   }
+
+  function getDatabaseValue($submittedValue, &$validationFailed)
+  {
+    return $submittedValue;
+  }
+
+  function getValuesToInsert($postData, &$insertedValues, &$multicolumnValuesToInsert, &$validationFailed, $conn)
+  {
+	$valueToInsert = "";
+	if (isset($postData[$this->databaseName]))
+	{
+	  $valueToInsert = trim($postData[$this->databaseName]);
+	}
+	if (!empty($valueToInsert))
+	{
+	  $insertedValues[$this->databaseName] = $valueToInsert;
+	}
+  }
+
+  function insertMulticolumnValues($multicolumnValuesToInsert, $tableNameForRow, $idOfRow, $conn)
+  {
+  }
 }
 
-class StringMulticolumn extends ColumnInfo
+abstract class Multicolumn extends ColumnInfo
+{
+  protected function getMulticolumnValuesToInsert($postData, &$multicolumnValuesToInsert, &$validationFailed, $conn)
+  {
+    $optionsForRow = $this->getSelectOptions($conn);
+	foreach ($optionsForRow as $optionId => $optionDisplayName)
+	{
+	  $inputName = $this->databaseName . '_' . $optionId;
+	  $submittedValue = "";
+	  if (isset($postData[$inputName]))
+	  {
+	    $submittedValue = trim($postData[$inputName]);
+	  }
+      if (!empty($submittedValue))
+	  {
+	    if (!isset($multicolumnValuesToInsert[$this->databaseName]))
+	    {
+	      $multicolumnValuesToInsert[$this->databaseName] = array();
+		}
+	    $multicolumnValuesToInsert[$this->databaseName][$optionId] = $submittedValue;
+	  }
+	}
+  }
+  
+ function getDatabaseValue($submittedValue, &$validationFailed)
+  {
+    return $submittedValue;
+  }
+}
+
+class StringMulticolumn extends Multicolumn
 {
   function __construct($databaseName, $displayName, $required, $dataType, $foreignTable, $foreignColumn, $columnValuesTable, $columnValuesDescriptionColumn, $foreignTableReferenceColumn)
   {
 	parent::__construct($databaseName, $displayName, $required, $dataType, $foreignTable, $foreignColumn, "multicolumn", $columnValuesTable, $columnValuesDescriptionColumn, $foreignTableReferenceColumn);
   }
   
-  function addToDatabaseNames()
+  function addToMainTableColumns()
   {
 	return false;
   }
@@ -325,16 +446,43 @@ class StringMulticolumn extends ColumnInfo
 	  echo '<td><input name="'. $inputName . '" /></td>';
 	}
   }
+
+  function getValuesToInsert($postData, &$insertedValues, &$multicolumnValuesToInsert, &$validationFailed, $conn)
+  {
+    $this->getMulticolumnValuesToInsert($postData, $multicolumnValuesToInsert, $validationFailed, $conn);
+ }
+
+  function insertMulticolumnValues($multicolumnValuesToInsert, $tableNameForRow, $idOfRow, $conn)
+  {
+    if (!isset($multicolumnValuesToInsert[$this->databaseName]))
+    {
+	  return;
+	}
+	$insertValues = $multicolumnValuesToInsert[$this->databaseName];
+	foreach ($insertValues as $optionId => $valueToInsert)
+	{
+	  $sql = "INSERT INTO " . $this->foreignTable . " (" 
+		  . $this->databaseName . ", " 
+		  . $this->foreignTableReferenceColumn . ","
+		  . $this->foreignColumn . ") VALUES (?,?,?)";
+	  $statement = $conn->prepare($sql);
+	  $statement->bind_param("sii", $valueToInsert, $optionId, $idOfRow); 
+	  if (!$statement->execute())
+	  {
+		echo "Execute of " . $sql . " with binding " . $valueToInsert . ", ". $optionId . ", ". $idOfRow . "failed (" . $statement->error . ")";
+	  }		
+	}
+  }
 }
 
-class CheckboxMulticolumn extends ColumnInfo
+class CheckboxMulticolumn extends Multicolumn
 {
   function __construct($databaseName, $displayName, $required, $dataType, $foreignTable, $foreignColumn, $columnValuesTable)
   {
 	parent::__construct($databaseName, $displayName, $required, $dataType, $foreignTable, $foreignColumn, "nToM", $columnValuesTable);
   }
 
-  function addToDatabaseNames()
+  function addToMainTableColumns()
   {
 	return false;
   }
@@ -400,6 +548,31 @@ class CheckboxMulticolumn extends ColumnInfo
 	{
 	  $inputName = $this->databaseName . '_' . $optionId;
 	  echo '<td><input type="checkbox" name="'. $inputName . '" value="1" /></td>';
+	}
+  }
+
+  function getValuesToInsert($postData, &$insertedValues, &$multicolumnValuesToInsert, &$validationFailed, $conn)
+  {
+    $this->getMulticolumnValuesToInsert($postData, $multicolumnValuesToInsert, $validationFailed, $conn);
+  }
+
+  function insertMulticolumnValues($multicolumnValuesToInsert, $tableNameForRow, $idOfRow, $conn)
+  {
+    if (!isset($multicolumnValuesToInsert[$this->databaseName]))
+    {
+	  return;
+	}
+	$insertValues = $multicolumnValuesToInsert[$this->databaseName];
+	foreach ($insertValues as $optionId => $valueToInsert)
+	{
+	  $sql = "INSERT INTO " . $this->columnValuesTable 
+		  . " (" . $tableNameForRow . "_id, " . $this->foreignTable . "_id) "
+		  . "VALUES (". $idOfRow . ',' . $optionId . ')';
+	  $conn->query($sql);
+	  if ($conn->errno != null)
+	  {
+		echo "error for " . $sql . ":" . $conn->error . "<br>";
+	  }
 	}
   }
 }
