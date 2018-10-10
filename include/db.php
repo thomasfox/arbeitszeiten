@@ -123,115 +123,15 @@ function doUpdates($tableName, $row, $columnInfos, $postData, $conn)
 
   $id = $row["id"];
   $updatedValues = array();
+  $foreignValuesToUpdate = array();
   $validationFailed = false;
   foreach ($columnInfos as $columnInfo)
   {
-	if ($columnInfo->foreignType != "multicolumn" && $columnInfo->foreignType != "nToM")
-	{
-	  $submittedValue = trim($postData[$columnInfo->databaseName . $id]);
-	  if ($columnInfo->required && empty($submittedValue))
-	  {
-		echo "Die Spalte " . $columnInfo->displayName . " in Datensatz Nr. " . $id . " ist ein Pflichtfeld und muss ausgefüllt werden. Der Datensatz wurde nicht gespeichert.<br/>";
-		$validationFailed = true;
-		continue;
-	  }
-      $dbValue = $row[$columnInfo->databaseName];	  
-	  {
-        if ($dbValue != $submittedValue)
-	    {
-		  if (!empty($submittedValue))
-		  {
-	        $updatedValues[$columnInfo->databaseName] = $columnInfo->getDatabaseValue($submittedValue, $validationFailed);
-		  }
-		  else
-		  {
-			$updatedValues[$columnInfo->databaseName] = null;
-		  }
-	    }
-	  }
-	}
-	else if (!$validationFailed) // TODO validation check does not work in all cases, we should collect all data before writing into db
-	{
-	  $optionsForRow = $optionsForRows[$columnInfo->databaseName];
-	  $dbValuesForRow = $valuesForMulticolumns[$columnInfo->databaseName];
-	  foreach ($optionsForRow as $optionId=>$optionDisplayName)
-	  {
-		$inputName = $columnInfo->databaseName . $id . '_' . $optionId;
-		$submittedValue = "";
-		if (isset($postData[$inputName]))
-		{
-		  $submittedValue = trim($postData[$inputName]);
-		}
-		$dbValue = "";
-		if (isset($dbValuesForRow[$id][$optionId]))
-		{
-		  $dbValue = $dbValuesForRow[$id][$optionId];
-		}
-		if ($dbValue != $submittedValue)
-		{
-		  if (isset($dbValuesForRow[$id][$optionId]) && !empty($submittedValue) && $columnInfo->foreignType == "multicolumn")
-		  {
-		    $sql = "UPDATE " . $columnInfo->foreignTable . " SET " . $columnInfo->databaseName . "=? " 
-			    . "WHERE " . $columnInfo->foreignTableReferenceColumn . "=? "
-			    . "AND " . $columnInfo->foreignColumn . "=?";
-	        $statement = $conn->prepare($sql);
-		    $statement->bind_param("sii", $submittedValue, $optionId, $id); 
-			if (!$statement->execute())
-			{
-			  echo "Execute of " . $sql . " with binding " . $submittedValue . ", ". $optionId . ", ". $id . "failed (" . $statement->error . ")";
-			}
-		  }
-		  else if (!empty($submittedValue))
-		  {
-			if ($columnInfo->foreignType == "multicolumn")
-			{
-		      $sql = "INSERT INTO " . $columnInfo->foreignTable . " (" 
-			      . $columnInfo->databaseName . ", " 
-				  . $columnInfo->foreignTableReferenceColumn . ","
-				  . $columnInfo->foreignColumn . ") VALUES (?,?,?)";
-	          $statement = $conn->prepare($sql);
-		      $statement->bind_param("sii", $submittedValue, $optionId, $id); 
-			  if (!$statement->execute())
-			  {
-			    echo "Execute of " . $sql . " with binding " . $submittedValue . ", ". $optionId . ", ". $id . "failed (" . $statement->error . ")";
-			  }
-            }			  
-			else
-			{
-		      $sql = "INSERT INTO " . $columnInfo->columnValuesTable 
-			      . " (" . $tableName . "_id, " . $columnInfo->foreignTable . "_id) "
-				  . "VALUES (". $id . ',' . $optionId . ')';
-			  $conn->query($sql);
-			  if ($conn->errno != null)
-	          {
-		        echo "error for " . $sql . ":" . $conn->error . "<br>";
-	          }
-			}
-		  }
-		  else if ($columnInfo->foreignType == "multicolumn")
-		  {
-		    $sql = "DELETE FROM " . $columnInfo->foreignTable 
-                . " WHERE " . $columnInfo->foreignTableReferenceColumn . "=" . $optionId
-				. " AND " . $columnInfo->foreignColumn . "=" . $id;		 
-			$conn->query($sql);
-			if ($conn->errno != null)
-	        {
-		      echo "error for " . $sql . ":" . $conn->error . "<br>";
-	        }
-		  }
-		  else
-		  {
-		    $sql = "DELETE FROM " . $columnInfo->columnValuesTable 
-			    . " WHERE " . $tableName . '_id=' . $id . ' AND ' . $columnInfo->foreignTable . "_id=" . $optionId;
-			$conn->query($sql);
-			if ($conn->errno != null)
-	        {
-		      echo "error for " . $sql . ":" . $conn->error . "<br>";
-	        }
-		  }
-		}
-	  }
-	}
+	$columnInfo->fillValuesToUpdate($updatedValues, $foreignValuesToUpdate, $postData, $row, $optionsForRows, $valuesForMulticolumns, $validationFailed);
+  }
+  if ($validationFailed)
+  {
+	return;
   }
   if (count($updatedValues) > 0 && !$validationFailed)
   {
@@ -244,6 +144,10 @@ function doUpdates($tableName, $row, $columnInfos, $postData, $conn)
 	{
 	  echo "Execute of " . $sql . " with binding " . $types . ", ". implode(", ", array_values($updatedValues)) . "failed (" . $statement->error . ")";
 	}
+  }
+  foreach ($columnInfos as $columnInfo)
+  {
+	$columnInfo->updateForeignValues($tableName, $foreignValuesToUpdate, $id, $conn);
   }
 }
 

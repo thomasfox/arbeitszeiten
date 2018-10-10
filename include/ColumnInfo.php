@@ -156,6 +156,22 @@ abstract class ColumnInfo
    */   
   public abstract function insertMulticolumnValues($multicolumnValuesToInsert, $tableNameForRow, $idOfRow, $conn);
   
+  /**
+   * Returns the values which need to be updated for a single row in the table representing the row.
+   *
+   * @param &$valuesToUpdate the values to be updated in the table corresponding to the form ($database name of column => value)
+   * @param &$foreignValuesToUpdate the values to be updated in the foreign table referenced by the column, in the form ($database name of column => custom format)
+   * @param $postData the values submitted by the user.
+   * @param $row the current values in the database of the considered row. 
+   * @param $optionsToSelectFrom the options for this column, as array(column's database name => array(optionKey => optiondisplayName)).
+   * @param $valuesForMulticolumns values for the multicolumn, as array(column's database name => array(id of record in this table => array(id of selectOption => value)).
+   * @param &$validationFailed flag which is true in case of a validation error and false otherwise.
+   *
+   */
+  public abstract function fillValuesToUpdate(&$valuesToUpdate, &$foreignValuesToUpdate, $postData, $row, $optionsToSelectFrom, $valuesForMulticolumns, &$validationFailed);
+  
+  public abstract function updateForeignValues($tableName, $foreignValuesToUpdate, $rowId, $conn);
+
   protected function querySelectOptions($descriptionColumn, $table, $conn)
   {
     $sql = "SELECT id," . $descriptionColumn . " FROM " . $table . " ORDER BY id ASC";
@@ -202,6 +218,36 @@ abstract class SingleColumn extends ColumnInfo
   }
 
   function insertMulticolumnValues($multicolumnValuesToInsert, $tableNameForRow, $idOfRow, $conn)
+  {
+  }
+
+  function fillValuesToUpdate(&$valuesToUpdate, &$foreignValuesToUpdate, $postData, $row, $optionsToSelectFrom, $valuesForMulticolumns, &$validationFailed)
+  {
+	$id = $row["id"];
+    $submittedValue = trim($postData[$this->databaseName . $id]);
+    if ($this->required && empty($submittedValue))
+    {
+	  echo "Die Spalte " . $this->displayName . " in Datensatz Nr. " . $id . " ist ein Pflichtfeld und muss ausgefüllt werden. Der Datensatz wurde nicht gespeichert.<br/>";
+	  $validationFailed = true;
+	  return;
+    }
+    $dbValue = $row[$this->databaseName];	  
+    {
+	  if ($dbValue != $submittedValue)
+	  {
+	    if (!empty($submittedValue))
+	    {
+		  $valuesToUpdate[$this->databaseName] = $this->getDatabaseValue($submittedValue, $validationFailed);
+	    }
+	    else
+	    {
+		  $valuesToUpdate[$this->databaseName] = null;
+	    }
+	  }
+    }
+  }
+  
+  function updateForeignValues($tableName, $foreignValuesToUpdate, $rowId, $conn)
   {
   }
 }
@@ -337,10 +383,83 @@ abstract class Multicolumn extends ColumnInfo
 	}
   }
   
- function getDatabaseValue($submittedValue, &$validationFailed)
+  function getDatabaseValue($submittedValue, &$validationFailed)
   {
     return $submittedValue;
   }
+  
+  function fillValuesToUpdate(&$valuesToUpdate, &$foreignValuesToUpdate, $postData, $row, $optionsToSelectFrom, $valuesForMulticolumns, &$validationFailed)
+  {
+    $optionsForColumn = $optionsToSelectFrom[$this->databaseName];
+    $dbValuesForRow = $valuesForMulticolumns[$this->databaseName];
+	$foreignValuesToUpdate[$this->databaseName]["remove"] = array();
+	$foreignValuesToUpdate[$this->databaseName]["update"] = array();
+	$foreignValuesToUpdate[$this->databaseName]["add"] = array();
+	$toRemove = &$foreignValuesToUpdate[$this->databaseName]["remove"];
+	$toUpdate = &$foreignValuesToUpdate[$this->databaseName]["update"];
+	$toAdd = &$foreignValuesToUpdate[$this->databaseName]["add"];
+	$id = $row["id"];
+    foreach ($optionsForColumn as $optionId=>$optionDisplayName)
+    {
+	  $inputName = $this->databaseName . $id . '_' . $optionId;
+	  $submittedValue = "";
+	  if (isset($postData[$inputName]))
+	  {
+	    $submittedValue = trim($postData[$inputName]);
+	  }
+	  $dbValue = "";
+	  if (isset($dbValuesForRow[$id][$optionId]))
+	  {
+	    $dbValue = $dbValuesForRow[$id][$optionId];
+	  }
+	  if ($dbValue != $submittedValue)
+	  {
+		if (isset($dbValuesForRow[$id][$optionId]) && !empty($submittedValue))
+		{
+		  $toUpdate[$optionId] = $submittedValue;
+		}
+        else if (!empty($submittedValue))
+		{
+          $toAdd[$optionId] = $submittedValue;
+		}
+		else
+		{
+		  $toRemove[$optionId] = 1;
+		}	
+	  }
+	}
+  }
+  
+  function updateForeignValues($tableName, $foreignValuesToUpdate, $rowId, $conn)
+  {
+	if (!empty($foreignValuesToUpdate[$this->databaseName]["remove"]))
+	{
+	  foreach (array_keys($foreignValuesToUpdate[$this->databaseName]["remove"]) as $optionId)
+	  {
+        $this->deleteForeignValuesOfColumn($tableName, $rowId, $optionId, $conn);
+	  }
+	}
+	if (!empty($foreignValuesToUpdate[$this->databaseName]["add"]))
+	{
+	  foreach($foreignValuesToUpdate[$this->databaseName]["add"] as $optionId => $value)
+	  {
+	    $this->addForeignValuesOfColumn($tableName, $rowId, $optionId, $value, $conn);
+	  }
+	}
+	if (!empty($foreignValuesToUpdate[$this->databaseName]["update"]))
+	{
+	  foreach($foreignValuesToUpdate[$this->databaseName]["update"] as $optionId => $value)
+	  {
+	    $this->updateForeignValuesOfColumn($tableName, $rowId, $optionId, $value, $conn);
+	  }
+	}
+  }
+  
+  protected abstract function deleteForeignValuesOfColumn($tableName, $rowId, $optionId, $conn);
+  
+  protected abstract function addForeignValuesOfColumn($tableName, $rowId, $optionId, $value, $conn);
+  
+  protected abstract function updateForeignValuesOfColumn($tableName, $rowId, $optionId, $value, $conn);
 }
 
 class StringMulticolumn extends Multicolumn
@@ -449,6 +568,44 @@ class StringMulticolumn extends Multicolumn
 	  }		
 	}
   }
+  
+  protected function deleteForeignValuesOfColumn($tableName, $rowId, $optionId, $conn)
+  {
+	$sql = "DELETE FROM " . $this->foreignTable 
+		. " WHERE " . $this->foreignTableReferenceColumn . "=" . $optionId
+		. " AND " . $this->foreignColumn . "=" . $rowId;		 
+	$conn->query($sql);
+	if ($conn->errno != null)
+	{
+	  echo "error for " . $sql . ":" . $conn->error . "<br>";
+	}
+  }
+  
+  protected function addForeignValuesOfColumn($tableName, $rowId, $optionId, $value, $conn)
+  {
+    $sql = "INSERT INTO " . $this->foreignTable . " (" 
+	    . $this->databaseName . ", " 
+	    . $this->foreignTableReferenceColumn . ","
+	    . $this->foreignColumn . ") VALUES (?,?,?)";
+    $statement = $conn->prepare($sql);
+    $statement->bind_param("sii", $value, $optionId, $rowId); 
+    if (!$statement->execute())
+    {
+	  echo "Execute of " . $sql . " with binding " . $value . ", ". $optionId . ", ". $rowId . "failed (" . $statement->error . ")";
+    }
+  }
+  
+  protected function updateForeignValuesOfColumn($tableName, $rowId, $optionId, $value, $connn)
+  {
+    $sql = "INSERT INTO " . $this->columnValuesTable 
+	    . " (" . $tableName . "_id, " . $this->foreignTable . "_id) "
+	    . "VALUES (". $id . ',' . $optionId . ')';
+    $conn->query($sql);
+    if ($conn->errno != null)
+    {
+	  echo "error for " . $sql . ":" . $conn->error . "<br>";
+    }
+  }
 }
 
 class CheckboxMulticolumn extends Multicolumn
@@ -532,7 +689,7 @@ class CheckboxMulticolumn extends Multicolumn
     $this->getMulticolumnValuesToInsert($postData, $multicolumnValuesToInsert, $validationFailed, $conn);
   }
 
-  function insertMulticolumnValues($multicolumnValuesToInsert, $tableNameForRow, $idOfRow, $conn)
+  function insertMulticolumnValues($multicolumnValuesToInsert, $tableNameForRow, $rowId, $conn)
   {
     if (!isset($multicolumnValuesToInsert[$this->databaseName]))
     {
@@ -543,13 +700,40 @@ class CheckboxMulticolumn extends Multicolumn
 	{
 	  $sql = "INSERT INTO " . $this->columnValuesTable 
 		  . " (" . $tableNameForRow . "_id, " . $this->foreignTable . "_id) "
-		  . "VALUES (". $idOfRow . ',' . $optionId . ')';
+		  . "VALUES (". $rowId . ',' . $optionId . ')';
 	  $conn->query($sql);
 	  if ($conn->errno != null)
 	  {
 		echo "error for " . $sql . ":" . $conn->error . "<br>";
 	  }
 	}
+  }
+    
+  protected function deleteForeignValuesOfColumn($tableName, $rowId, $optionId, $conn)
+  {
+	$sql = "DELETE FROM " . $this->columnValuesTable 
+		. " WHERE " . $tableName . '_id=' . $rowId . ' AND ' . $this->foreignTable . "_id=" . $optionId;
+	$conn->query($sql);
+	if ($conn->errno != null)
+	{
+	  echo "error for " . $sql . ":" . $conn->error . "<br>";
+	}
+  }
+  
+  protected function addForeignValuesOfColumn($tableName, $rowId, $optionId, $value, $conn)
+  {
+    $sql = "INSERT INTO " . $this->columnValuesTable 
+	    . " (" . $tableName . "_id, " . $this->foreignTable . "_id) "
+	    . "VALUES (". $rowId . ',' . $optionId . ')';
+    $conn->query($sql);
+    if ($conn->errno != null)
+    {
+	  echo "error for " . $sql . ":" . $conn->error . "<br>";
+    }
+  }
+  
+  protected function updateForeignValuesOfColumn($tableName, $rowId, $optionId, $value, $conn)
+  {
   }
 }
 
