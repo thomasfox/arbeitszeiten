@@ -176,24 +176,44 @@ abstract class ColumnInfo
   }
 }
 
-class SimpleValueColumn extends ColumnInfo
+abstract class SingleColumn extends ColumnInfo
+{
+  function addToMainTableColumns()
+  {
+	return true;
+  }
+
+  function getMulticolumnValues($tableName, $conn)
+  {
+	return null;
+  }  
+
+  function getValuesToInsert($postData, &$insertedValues, &$multicolumnValuesToInsert, &$validationFailed, $conn)
+  {
+	$valueToInsert = "";
+	if (isset($postData[$this->databaseName]))
+	{
+	  $valueToInsert = trim($postData[$this->databaseName]);
+	}
+	if (!empty($valueToInsert))
+	{
+	  $insertedValues[$this->databaseName] = $this->getDatabaseValue($valueToInsert, $validationFailed);
+	}
+  }
+
+  function insertMulticolumnValues($multicolumnValuesToInsert, $tableNameForRow, $idOfRow, $conn)
+  {
+  }
+}
+
+class SimpleValueColumn extends SingleColumn
 {
   function __construct($databaseName, $displayName, $required, $dataType = "s")
   {
 	parent::__construct($databaseName, $displayName, $required, $dataType);
   }
   
-  function addToMainTableColumns()
-  {
-	return true;
-  }
-  
   function getSelectOptions($conn)
-  {
-	return null;
-  }
-  
-  function getMulticolumnValues($tableName, $conn)
   {
 	return null;
   }
@@ -237,45 +257,18 @@ class SimpleValueColumn extends ColumnInfo
 	  return $submittedValue;
 	}
   }
-
-  function getValuesToInsert($postData, &$insertedValues, &$multicolumnValuesToInsert, &$validationFailed, $conn)
-  {
-	$valueToInsert = "";
-	if (isset($postData[$this->databaseName]))
-	{
-	  $valueToInsert = trim($postData[$this->databaseName]);
-	}
-	if (!empty($valueToInsert))
-	{
-	  $insertedValues[$this->databaseName] = getDatabaseValue($submittedValue, $validationFailed);
-	}
-  }
-  
-  function insertMulticolumnValues($multicolumnValuesToInsert, $tableNameForRow, $idOfRow, $conn)
-  {
-  }
 }
 
-class DropdownColumn extends ColumnInfo
+class DropdownColumn extends SingleColumn
 {
   function __construct($databaseName, $displayName, $required, $dataType, $foreignTable, $foreignColumn)
   {
 	parent::__construct($databaseName, $displayName, $required, $dataType, $foreignTable, $foreignColumn, "dropdown");
   }
-  
-  function addToMainTableColumns()
-  {
-	return true;
-  }
-  
+   
   function getSelectOptions($conn)
   {
 	return $this->querySelectOptions($this->foreignColumn, $this->foreignTable, $conn);
-  }
-  
-  function getMulticolumnValues($tableName, $conn)
-  {
-	return null;
   }
   
   function printColumnHeaders($optionsToSelectFrom)
@@ -317,23 +310,6 @@ class DropdownColumn extends ColumnInfo
   function getDatabaseValue($submittedValue, &$validationFailed)
   {
     return $submittedValue;
-  }
-
-  function getValuesToInsert($postData, &$insertedValues, &$multicolumnValuesToInsert, &$validationFailed, $conn)
-  {
-	$valueToInsert = "";
-	if (isset($postData[$this->databaseName]))
-	{
-	  $valueToInsert = trim($postData[$this->databaseName]);
-	}
-	if (!empty($valueToInsert))
-	{
-	  $insertedValues[$this->databaseName] = $valueToInsert;
-	}
-  }
-
-  function insertMulticolumnValues($multicolumnValuesToInsert, $tableNameForRow, $idOfRow, $conn)
-  {
   }
 }
 
