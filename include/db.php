@@ -58,24 +58,24 @@ function columnDataAsEditableTable($tableName, $columnInfos, $conn)
   $concatenatedColumnNames = implode(",", $columnNames);
   $sql = "SELECT id," . $concatenatedColumnNames . " FROM " . $tableName . " ORDER BY id ASC";
   $result = $conn->query($sql);
-  echo '<form method="POST"><table><tr><td>Nr</td>';
+  echo '<form method="POST"><table class="table table-bordered"><thead class="thead-light"><tr><th scope="column">Nr</th>';
   foreach ($columnInfos as $columnInfo)
   {
 	$columnInfo->printColumnHeaders($optionsToSelectFrom);
   }
-  echo "</tr>";
+  echo '<th scope="column"></th></tr></thead><tbody>';
   if ($conn->errno == 0)
   {
     while($row = $result->fetch_assoc()) 
     {
       echo "<tr>";
 	  $id = $row["id"];
-      echo '<td>' . $id . '</td>';
+      echo '<th scope="row">' . $id . '</th>';
 	  foreach ($columnInfos as $columnInfo)
       {
 		$columnInfo->printColumnsForRow($row, $optionsToSelectFrom, $valuesForMulticolumns);
 	  }
-      echo '<td><button type="submit" name="delete" value="' . $id . '">Löschen</button></td>';
+      echo '<td><button type="submit" class="btn btn-secondary" name="delete" value="' . $id . '">Löschen</button></td>';
       echo "</tr>";  
     }
   }
@@ -83,12 +83,12 @@ function columnDataAsEditableTable($tableName, $columnInfos, $conn)
   {
     echo "error for " . $sql . ":" . $conn->error . "<br>";
   }
-  echo "<tr><td>neu:</td>";
+  echo '<tr><th scope="row">neu:</td>';
   foreach ($columnInfos as $columnInfo)
   {
 	$columnInfo->printColumnsForNewRow($optionsToSelectFrom);
   }
-  echo '</tr></table><br/><button type="submit" name="save" value="save">Speichern</button></form>';
+  echo '<td></td></tr></tbody></table><br/><button type="submit" class="btn btn-primary" name="save" value="save">Speichern</button></form>';
 }
 
 function saveEditableTableData($tableName, $columnInfos, $postData, $conn)
@@ -165,14 +165,12 @@ function doInserts($tableName, $columnInfos, $postData, $conn)
   {
     foreach ($columnInfos as $columnInfo)
 	{
-	  if ($columnInfo->foreignType != "multicolumn")
+	  $submittedValue = null;
+	  if (isset($insertedValues[$columnInfo->databaseName]))
 	  {
-	    if ($columnInfo->required && !isset($insertedValues[$columnInfo->databaseName]))
-		{
-		  echo "Die Spalte " . $columnInfo->displayName . " im neuen Datensatz ist ein Pflichtfeld und muss ausgefüllt werden. Der Datensatz wurde nicht gespeichert.<br/>";
-		  $validationError = true;
-		}
+		$submittedValue = $insertedValues[$columnInfo->databaseName];
 	  }
+	  $validationError = !$columnInfo->validateSubmittedValue($submittedValue);
 	}
 	if ($validationError)
 	{

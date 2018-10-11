@@ -5,60 +5,10 @@ abstract class ColumnInfo
   
   public $displayName; // A human readable label for the Value in the database column
   
-  public $required = false;
-  
-  public $datatype = "s"; // one of "s" (String), "i" (Integer), "d" (Date) or "t" (Time)
-
-  public $foreignTable; // foreign table containing the displayed value
-  
-  public $foreignColumn;// for multicolumn: foreign-key-column in the foreign table containing the id of this table's row
-                        // for dropdown or text: foreign-key-column in this table containing the id of the foreign table's row
-  
-  public $foreignType; // possible values are "dropdown" for selection in a singleSelect, 
-					   // "multicolumn" for creating several entries at once associated with certain values in the foreign tables
-					   // "nToM" for a n-to-m-relationship between two tables
-
-  public $columnValuesTable; // for "multicolumn" and "nToM" only
-  
-  public $columnValuesDescriptionColumn; // for "multicolumn" only
-  
-  public $foreignTableReferenceColumn; // for "multicolumn" only, contains the join column in the foreign table
-
-  function __construct()
+  function __construct($databaseName, $displayName)
   {
-    $args = func_get_args();
-	$this->databaseName = $args[0];
-	if (count($args) > 1)
-	{
-	  $this->displayName = $args[1];
-	}
-	if (count($args) > 2)
-	{
-	  $this->required = $args[2];
-	}
-	if (count($args) > 3)
-	{
-	  $this->datatype = $args[3];
-	}
-    if (count($args) > 4)
-    {
-      $this->foreignTable = $args[4];
-      $this->foreignColumn = $args[5];
-	  if ($args[6] != "dropdown" && $args[6] != "text" && $args[6] != "multicolumn" && $args[6] != "nToM")
-	  {
-		throw new Exception('foreignType must be one of "dropdown" or "text" or "multicolumn"');
-	  }
-      $this->foreignType = $args[6];
-	  if ($args[6] == "multicolumn" || $args[6] == "nToM")
-	  {
-		$this->columnValuesTable = $args[7];
-	  }
-	  if ($args[6] == "multicolumn")
-	  {
-		$this->columnValuesDescriptionColumn = $args[8];
-		$this->foreignTableReferenceColumn = $args[9];
-	  }
-	}
+	$this->databaseName = $databaseName;
+    $this->displayName = $displayName;
   }
   
   function getDisplayName()
@@ -171,11 +121,14 @@ abstract class ColumnInfo
   public abstract function fillValuesToUpdate(&$valuesToUpdate, &$foreignValuesToUpdate, $postData, $row, $optionsToSelectFrom, $valuesForMulticolumns, &$validationFailed);
   
   public abstract function updateForeignValues($tableName, $foreignValuesToUpdate, $rowId, $conn);
+  
+  public abstract function validateSubmittedValue($submittedValue);
 
   protected function querySelectOptions($descriptionColumn, $table, $conn)
   {
     $sql = "SELECT id," . $descriptionColumn . " FROM " . $table . " ORDER BY id ASC";
     $result = $conn->query($sql);
+	$selectOptions = null;
     if ($conn->errno == 0)
     {
    	  $selectOptions = array();
@@ -194,11 +147,24 @@ abstract class ColumnInfo
 
 abstract class SingleColumn extends ColumnInfo
 {
+  protected $required;
+
+  function __construct($databaseName, $displayName, $required)
+  {
+	parent::__construct($databaseName, $displayName);
+	$this->required = $required;
+  }
+
   function addToMainTableColumns()
   {
 	return true;
   }
 
+  function printColumnHeaders($optionsToSelectFrom)
+  {
+    echo '<th scope="column">' . $this->getDisplayName() . '</th>';
+  }
+  
   function getMulticolumnValues($tableName, $conn)
   {
 	return null;
@@ -250,23 +216,31 @@ abstract class SingleColumn extends ColumnInfo
   function updateForeignValues($tableName, $foreignValuesToUpdate, $rowId, $conn)
   {
   }
+  
+  function validateSubmittedValue($submittedValue)
+  {
+    if ($this->required && empty($submittedValue))
+	{
+	  echo "Die Spalte " . $this->displayName . " im neuen Datensatz ist ein Pflichtfeld und muss ausgefüllt werden. Der Datensatz wurde nicht gespeichert.<br/>";
+	  return false;
+	}
+	return true;
+  }
 }
 
 class SimpleValueColumn extends SingleColumn
 {
+  private $datatype; // one of "s" (String), "i" (Integer), "d" (Date) or "t" (Time)
+
   function __construct($databaseName, $displayName, $required, $dataType = "s")
   {
-	parent::__construct($databaseName, $displayName, $required, $dataType);
+	parent::__construct($databaseName, $displayName, $required);
+	$this->datatype = $dataType;
   }
   
   function getSelectOptions($conn)
   {
 	return null;
-  }
-  
-  function printColumnHeaders($optionsToSelectFrom)
-  {
-    echo "<td>" . $this->getDisplayName() . "</td>";
   }
   
   function printColumnsForRow($row, $optionsToSelectFrom, $valuesForMulticolumns)
@@ -277,12 +251,12 @@ class SimpleValueColumn extends SingleColumn
     {
       $value = DateTime::createFromFormat("Y-m-d", $value)->format("d.m.Y");
     }
-    echo '<td><input name="'. $this->databaseName . $id . '" value="' . $value . '" /></td>';
+    echo '<td><input name="'. $this->databaseName . $id . '" value="' . $value . '" class="form-control"/></td>';
   }
   
   function printColumnsForNewRow($optionsToSelectFrom)
   {
-    echo '<td><input name="'. $this->databaseName . '"/></td>';
+    echo '<td><input name="'. $this->databaseName . '" class="form-control"/></td>';
   }
 
   function getDatabaseValue($submittedValue, &$validationFailed)
@@ -307,9 +281,15 @@ class SimpleValueColumn extends SingleColumn
 
 class DropdownColumn extends SingleColumn
 {
-  function __construct($databaseName, $displayName, $required, $dataType, $foreignTable, $foreignColumn)
+  private $foreignTable;
+
+  private $foreignColumn; // foreign-key-column in this table containing the id of the foreign table's row
+
+  function __construct($databaseName, $displayName, $required, $foreignTable, $foreignColumn)
   {
-	parent::__construct($databaseName, $displayName, $required, $dataType, $foreignTable, $foreignColumn, "dropdown");
+	parent::__construct($databaseName, $displayName, $required);
+	$this->foreignTable = $foreignTable; 
+	$this->foreignColumn = $foreignColumn;
   }
    
   function getSelectOptions($conn)
@@ -317,16 +297,11 @@ class DropdownColumn extends SingleColumn
 	return $this->querySelectOptions($this->foreignColumn, $this->foreignTable, $conn);
   }
   
-  function printColumnHeaders($optionsToSelectFrom)
-  {
-    echo "<td>" . $this->getDisplayName() . "</td>";
-  }
-
   function printColumnsForRow($row, $optionsToSelectFrom, $valuesForMulticolumns)
   {
 	$id = $row["id"];
     $value = $row[$this->databaseName];
-    echo '<td><select name="'. $this->databaseName . $id . '">';
+    echo '<td><select name="'. $this->databaseName . $id . '" class="form-control">';
     echo '<option value=""></option>"';
     $optionsForColumn = $optionsToSelectFrom[$this->databaseName];
     foreach ($optionsForColumn as $optionId => $optionDisplayName)
@@ -343,7 +318,7 @@ class DropdownColumn extends SingleColumn
   
   function printColumnsForNewRow($optionsToSelectFrom)
   {
-    echo '<td><select name="'. $this->databaseName . '">"';
+    echo '<td><select name="'. $this->databaseName . '" class="form-control">"';
     echo '<option value=""></option>"';
     $optionsForColumn = $optionsToSelectFrom[$this->databaseName];
     foreach ($optionsForColumn as $optionId=>$optionDisplayName)
@@ -460,13 +435,33 @@ abstract class Multicolumn extends ColumnInfo
   protected abstract function addForeignValuesOfColumn($tableName, $rowId, $optionId, $value, $conn);
   
   protected abstract function updateForeignValuesOfColumn($tableName, $rowId, $optionId, $value, $conn);
+    
+  function validateSubmittedValue($submittedValue)
+  {
+    return true;
+  }
 }
 
 class StringMulticolumn extends Multicolumn
 {
-  function __construct($databaseName, $displayName, $required, $dataType, $foreignTable, $foreignColumn, $columnValuesTable, $columnValuesDescriptionColumn, $foreignTableReferenceColumn)
+  protected $foreignTable; // foreign table containing the displayed value
+  
+  protected $foreignColumn; // foreign-key-column in the foreign table containing the id of this table's row
+  
+  protected $columnValuesTable;
+  
+  protected $columnValuesDescriptionColumn;
+  
+  protected $foreignTableReferenceColumn;
+
+  function __construct($databaseName, $displayName, $foreignTable, $foreignColumn, $columnValuesTable, $columnValuesDescriptionColumn, $foreignTableReferenceColumn)
   {
-	parent::__construct($databaseName, $displayName, $required, $dataType, $foreignTable, $foreignColumn, "multicolumn", $columnValuesTable, $columnValuesDescriptionColumn, $foreignTableReferenceColumn);
+	parent::__construct($databaseName, $displayName);
+	$this->foreignTable = $foreignTable;
+	$this->foreignColumn = $foreignColumn;
+	$this->columnValuesTable = $columnValuesTable;
+	$this->columnValuesDescriptionColumn = $columnValuesDescriptionColumn;
+	$this->foreignTableReferenceColumn = $foreignTableReferenceColumn;
   }
   
   function addToMainTableColumns()
@@ -511,7 +506,7 @@ class StringMulticolumn extends Multicolumn
   {
     foreach ($optionsToSelectFrom[$this->databaseName] as $displayName)
 	{
-      echo "<td>" . $displayName . "</td>";
+      echo '<th scope="column">' . $displayName . '</th>';
 	}
   }
   
@@ -528,7 +523,7 @@ class StringMulticolumn extends Multicolumn
 	  {
 	    $inputValue = $valuesForColumn[$id][$optionId];
 	  }
-      echo '<td><input name="'. $inputName . '" value="' . $inputValue . '" /></td>';
+      echo '<td><input name="'. $inputName . '" value="' . $inputValue . '" class="form-control" /></td>';
     }
   }
   
@@ -538,7 +533,7 @@ class StringMulticolumn extends Multicolumn
 	foreach ($optionsForColumn as $optionId => $optionDisplayName)
 	{
 	  $inputName = $this->databaseName . '_' . $optionId;
-	  echo '<td><input name="'. $inputName . '" /></td>';
+	  echo '<td><input name="'. $inputName . '" class="form-control"/></td>';
 	}
   }
 
@@ -610,9 +605,18 @@ class StringMulticolumn extends Multicolumn
 
 class CheckboxMulticolumn extends Multicolumn
 {
-  function __construct($databaseName, $displayName, $required, $dataType, $foreignTable, $foreignColumn, $columnValuesTable)
+  private $foreignTable; // foreign table containing the displayed value
+  
+  private $foreignColumn; // foreign-key-column in the foreign table containing the id of this table's row
+  
+  private $columnValuesTable;
+
+  function __construct($databaseName, $displayName, $foreignTable, $foreignColumn, $columnValuesTable)
   {
-	parent::__construct($databaseName, $displayName, $required, $dataType, $foreignTable, $foreignColumn, "nToM", $columnValuesTable);
+	parent::__construct($databaseName, $displayName);
+	$this->foreignTable = $foreignTable;
+	$this->foreignColumn = $foreignColumn;
+	$this->columnValuesTable = $columnValuesTable;
   }
 
   function addToMainTableColumns()
@@ -653,7 +657,7 @@ class CheckboxMulticolumn extends Multicolumn
   {
     foreach ($optionsToSelectFrom[$this->databaseName] as $displayName)
 	{
-      echo "<td>" . $displayName . "</td>";
+      echo '<th scope="column">' . $displayName . '</th>';
 	}
   }
   
