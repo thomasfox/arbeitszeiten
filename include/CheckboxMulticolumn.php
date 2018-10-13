@@ -17,7 +17,7 @@ class CheckboxMulticolumn extends Multicolumn
 
   function getSelectOptions($conn)
   {
-	return $this->querySelectOptions($this->foreignColumn, $this->foreignTable, $conn);
+	return $this->querySelectOptions($this->foreignColumn, $this->foreignTable, "", $conn);
   }
 
   function getMulticolumnValues($tableName, $conn)
@@ -40,7 +40,7 @@ class CheckboxMulticolumn extends Multicolumn
     }
     else
     {
-      echo "error for " . $sql . ":" . $conn->error . "<br>";
+      alertError("getMulticolumnValues(): error for " . $sql . ":" . $conn->error);
     }
   }
 
@@ -99,7 +99,7 @@ class CheckboxMulticolumn extends Multicolumn
 	  $conn->query($sql);
 	  if ($conn->errno != null)
 	  {
-		echo "error for " . $sql . ":" . $conn->error . "<br>";
+		alertError("insertMulticolumnValues(): error for " . $sql . ":" . $conn->error);
 	  }
 	}
   }
@@ -111,7 +111,7 @@ class CheckboxMulticolumn extends Multicolumn
 	$conn->query($sql);
 	if ($conn->errno != null)
 	{
-	  echo "error for " . $sql . ":" . $conn->error . "<br>";
+	  alertError("deleteForeignValuesOfColumn(): error for " . $sql . ":" . $conn->error);
 	}
   }
   
@@ -123,7 +123,7 @@ class CheckboxMulticolumn extends Multicolumn
     $conn->query($sql);
     if ($conn->errno != null)
     {
-	  echo "error for " . $sql . ":" . $conn->error . "<br>";
+	  alertError("addForeignValuesOfColumn() : error for " . $sql . ":" . $conn->error);
     }
   }
   
@@ -131,5 +131,4 @@ class CheckboxMulticolumn extends Multicolumn
   {
   }
 }
-
 ?>

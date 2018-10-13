@@ -47,7 +47,7 @@ abstract class SingleColumn extends ColumnInfo
     $submittedValue = trim($postData[$this->databaseName . $id]);
     if ($this->required && empty($submittedValue))
     {
-	  echo "Die Spalte " . $this->displayName . " in Datensatz Nr. " . $id . " ist ein Pflichtfeld und muss ausgefüllt werden. Der Datensatz wurde nicht gespeichert.<br/>";
+	  alertError("Die Spalte " . $this->displayName . " in Datensatz Nr. " . $id . " ist ein Pflichtfeld und muss ausgefüllt werden. Der Datensatz wurde nicht gespeichert.");
 	  $validationFailed = true;
 	  return;
     }
@@ -75,7 +75,7 @@ abstract class SingleColumn extends ColumnInfo
   {
     if ($this->required && empty($submittedValue))
 	{
-	  echo "Die Spalte " . $this->displayName . " im neuen Datensatz ist ein Pflichtfeld und muss ausgefüllt werden. Der Datensatz wurde nicht gespeichert.<br/>";
+	  alertError("Die Spalte " . $this->displayName . " im neuen Datensatz ist ein Pflichtfeld und muss ausgefüllt werden. Der Datensatz wurde nicht gespeichert.");
 	  return false;
 	}
 	return true;

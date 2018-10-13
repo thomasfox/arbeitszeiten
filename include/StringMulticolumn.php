@@ -10,8 +10,10 @@ class StringMulticolumn extends Multicolumn
   protected $columnValuesDescriptionColumn;
   
   protected $foreignTableReferenceColumn;
+  
+  protected $optionsWhereClause;
 
-  function __construct($databaseName, $displayName, $foreignTable, $foreignColumn, $columnValuesTable, $columnValuesDescriptionColumn, $foreignTableReferenceColumn)
+  function __construct($databaseName, $displayName, $foreignTable, $foreignColumn, $columnValuesTable, $columnValuesDescriptionColumn, $foreignTableReferenceColumn, $optionsWhereClause = "")
   {
 	parent::__construct($databaseName, $displayName);
 	$this->foreignTable = $foreignTable;
@@ -19,11 +21,12 @@ class StringMulticolumn extends Multicolumn
 	$this->columnValuesTable = $columnValuesTable;
 	$this->columnValuesDescriptionColumn = $columnValuesDescriptionColumn;
 	$this->foreignTableReferenceColumn = $foreignTableReferenceColumn;
+	$this->optionsWhereClause = $optionsWhereClause;
   }
   
   function getSelectOptions($conn)
   {
-	return $this->querySelectOptions($this->columnValuesDescriptionColumn, $this->columnValuesTable, $conn);
+	return $this->querySelectOptions($this->columnValuesDescriptionColumn, $this->columnValuesTable, $this->optionsWhereClause, $conn);
   }
   
   function getMulticolumnValues($tableName, $conn)
@@ -50,7 +53,7 @@ class StringMulticolumn extends Multicolumn
     }
     else
     {
-      echo "error for " . $sql . ":" . $conn->error . "<br>";
+      alertError("getMulticolumnValues: error for " . $sql . ":" . $conn->error);
     }
   }
   
@@ -111,7 +114,7 @@ class StringMulticolumn extends Multicolumn
 	  $statement->bind_param("sii", $valueToInsert, $optionId, $idOfRow); 
 	  if (!$statement->execute())
 	  {
-		echo "insertMulticolumnValues(): Execute of " . $sql . " with binding " . $valueToInsert . ", ". $optionId . ", ". $idOfRow . "failed (" . $statement->error . ")";
+		alertError("insertMulticolumnValues(): Execute of " . $sql . " with binding " . $valueToInsert . ", ". $optionId . ", ". $idOfRow . "failed (" . $statement->error . ")");
 	  }		
 	}
   }
@@ -124,7 +127,7 @@ class StringMulticolumn extends Multicolumn
 	$conn->query($sql);
 	if ($conn->errno != null)
 	{
-	  echo "error for " . $sql . ":" . $conn->error . "<br>";
+	  alertError("deleteForeignValuesOfColumn: error for " . $sql . ":" . $conn->error);
 	}
   }
   
@@ -138,7 +141,7 @@ class StringMulticolumn extends Multicolumn
     $statement->bind_param("sii", $value, $optionId, $rowId); 
     if (!$statement->execute())
     {
-	  echo "addForeignValuesOfColumn(): Execute of " . $sql . " with binding " . $value . ", ". $optionId . ", ". $rowId . "failed (" . $statement->error . ")";
+	  alertError("addForeignValuesOfColumn(): Execute of " . $sql . " with binding " . $value . ", ". $optionId . ", ". $rowId . "failed (" . $statement->error . ")");
     }
   }
   
@@ -153,7 +156,7 @@ class StringMulticolumn extends Multicolumn
     $conn->query($sql);
     if (!$statement->execute())
     {
-	  echo "updateForeignValuesOfColumn(): error for " . $sql . " with binding " . $value . ", ". $optionId . ", ". $rowId . ":" . $statement->error . "<br>";
+	  alertError("updateForeignValuesOfColumn(): error for " . $sql . " with binding " . $value . ", ". $optionId . ", ". $rowId . ":" . $statement->error);
     }
   }
 }

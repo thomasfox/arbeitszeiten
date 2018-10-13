@@ -81,7 +81,7 @@ function columnDataAsEditableTable($tableName, $columnInfos, $conn, $whereClause
   }
   else
   {
-    echo "error for " . $sql . ":" . $conn->error . "<br>";
+    alertError("columnDataAsEditableTable(): error for " . $sql . ":" . $conn->error);
   }
   echo '<tr><th scope="row">neu:</td>';
   foreach ($columnInfos as $columnInfo)
@@ -111,7 +111,7 @@ function saveEditableTableData($tableName, $columnInfos, $postData, $conn)
   }
   else
   {
-    echo "error for " . $sql . "<br>";
+    alertError("saveEditableTableData: error for " . $sql);
   }
   doInserts($tableName, $columnInfos, $postData, $conn);
 }
@@ -147,7 +147,7 @@ function doUpdates($tableName, $row, $columnInfos, $postData, $conn)
 	$statement->bind_param($types, ...array_values($updatedValues)); 
 	if (!$statement->execute())
 	{
-	  echo "Execute of " . $sql . " with binding " . $types . ", ". implode(", ", array_values($updatedValues)) . "failed (" . $statement->error . ")";
+	  alertError("doUpdates: Execute of " . $sql . " with binding " . $types . ", ". implode(", ", array_values($updatedValues)) . "failed (" . $statement->error . ")");
 	}
   }
   foreach ($columnInfos as $columnInfo)
@@ -189,7 +189,7 @@ function doInserts($tableName, $columnInfos, $postData, $conn)
 	$statement->bind_param($types, ...array_values($insertedValues)); 
 	if (!$statement->execute())
 	{
-	  echo "Execute of " . $sql . " with binding " . $types . ", ". implode(", ", array_values($insertedValues)) . "failed (" . $statement->error . ")";
+	  alertError("doInserts: Execute of " . $sql . " with binding " . $types . ", ". implode(", ", array_values($insertedValues)) . "failed (" . $statement->error . ")");
 	}
 	$id = $conn->insert_id;
     foreach ($columnInfos as $columnInfo)
@@ -217,7 +217,7 @@ function checkAnyRowDeleted($tableName, $columnInfos, $postData, $conn)
   }
   else
   {
-    echo "error for " . $sql . "<br>";
+    alertError("checkAnyRowDeleted: error for " . $sql);
   }
 }
 
@@ -229,14 +229,14 @@ function checkDeleteRow($tableName, $id, $columnInfos, $postData, $conn)
     $conn->query($sql);
     if ($conn->errno != 0)
 	{
-	  echo "Execute of " . $sql . "failed (" . $conn->error . ")";
+	  alertError("checkDeleteRow: Execute of " . $sql . "failed (" . $conn->error . ")");
 	}
   }
 }
 
 function printFilterForm($label, $table, $column, $conn)
 {
-  $optionsForColumn = ColumnInfo::querySelectOptions($column, $table, $conn);
+  $optionsForColumn = ColumnInfo::querySelectOptions($column, $table, "", $conn);
   $oldFilterValue = null;
   if (isset($_GET["filter"]))
   {
@@ -257,4 +257,21 @@ function printFilterForm($label, $table, $column, $conn)
   echo '</select></div><div class="col-auto"><button type="submit" class="btn btn-primary mb-2">Filter</button></div></div></form>';
 }
 
+function checkIdValueExists($tableName, $value, $conn)
+{
+  $sql = 'SELECT id FROM ' . $tableName . ' WHERE id=?';
+  $statement = $conn->prepare($sql);
+  $statement->bind_param('s', $value); 
+  if (!$statement->execute())
+  {
+    alertError("checkIdValueExists: Execute of " . $sql . " with binding " . $value . "failed (" . $statement->error . ")");
+  }
+  $statement->store_result();
+  return ($statement->num_rows() == 1);
+}
+
+function alertError($message)
+{
+  echo '<div class="alert alert-danger" role="alert">' . $message . '</div>';
+}
 ?>

@@ -42,7 +42,7 @@ class SimpleValueColumn extends SingleColumn
 	  $valueAsDate = DateTime::createFromFormat("d.m.Y", $submittedValue);
 	  if ($valueAsDate == false)
 	  {
-		echo "Die Spalte " . $this->displayName . " in Datensatz Nr. " . $id . " hat ein ungültiges Datumsformat.  Bitte verwenden Die das Format TT.MM.JJJJ. Der Datensatz wurde nicht gespeichert.<br/>";
+		alertError("Die Spalte " . $this->displayName . " in Datensatz Nr. " . $id . " hat ein ungültiges Datumsformat.  Bitte verwenden Die das Format TT.MM.JJJJ. Der Datensatz wurde nicht gespeichert.");
 		$validationFailed = true;
 		return null;
 	  }

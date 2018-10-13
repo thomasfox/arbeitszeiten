@@ -153,9 +153,9 @@ abstract class ColumnInfo
   
   public abstract function validateSubmittedValue($submittedValue);
 
-  public static function querySelectOptions($descriptionColumn, $table, $conn)
+  public static function querySelectOptions($descriptionColumn, $table, $whereClause, $conn)
   {
-    $sql = "SELECT id," . $descriptionColumn . " FROM " . $table . " ORDER BY id ASC";
+    $sql = "SELECT id," . $descriptionColumn . " FROM " . $table . $whereClause . " ORDER BY id ASC";
     $result = $conn->query($sql);
 	$selectOptions = null;
     if ($conn->errno == 0)
@@ -168,7 +168,7 @@ abstract class ColumnInfo
     }
     else
     {
-      echo "error for " . $sql . ":" . $conn->error . "<br>";
+      alertError("querySelectOptions() : error for " . $sql . ":" . $conn->error);
 	}
 	return $selectOptions;
   }

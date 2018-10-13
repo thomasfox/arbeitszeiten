@@ -14,16 +14,30 @@ include "include/db.php";
 
 printFilterForm("Arbeitsgruppe", "arbeitsgruppe", "name", $conn);
 $filter = null;
+$filterWhereClause = "";
 if (isset($_GET['filter']))
 {
   $filter = $_GET['filter'];
+  if (!empty($filter))
+  {
+	if (!checkIdValueExists("arbeitsgruppe", $filter, $conn))
+	{
+      alertError("ungültiger Filterwert " . $filter . " wird ignoriert");
+	  $filter = null;
+	  $filterWhereClause = "";
+	}
+	else
+	{
+      $filterWhereClause = ' WHERE exists (SELECT * from arbeitsgruppe_familie WHERE familie_id=familie.id AND arbeitsgruppe_id=' . $filter . ") ";
+	}
+  }
 }
 
 $columnInfos = array(
   new SimpleValueColumn("beschreibung", "Beschreibung", true),
   new DropdownColumn("arbeitsgruppe_id", "Arbeitsgruppe", false, "arbeitsgruppe", "name"),
   new SimpleValueColumn("workdate", "Datum(TT:MM:JJJJ)", true, "d"),
-  new StringMulticolumn("minutes", "Arbeitszeit in Minuten", "arbeitszeit", "arbeitsauftrag_id", "familie", "name", "familie_id"));
+  new StringMulticolumn("minutes", "Arbeitszeit in Minuten", "arbeitszeit", "arbeitsauftrag_id", "familie", "name", "familie_id", $filterWhereClause));
 
 checkAnyRowDeleted("arbeitsauftrag", $columnInfos, $_POST, $conn);
 saveEditableTableData("arbeitsauftrag", $columnInfos, $_POST, $conn);
