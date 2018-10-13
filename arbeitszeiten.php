@@ -13,7 +13,11 @@ include "include/config.php";
 include "include/db.php";
 
 printFilterForm("Arbeitsgruppe", "arbeitsgruppe", "name", $conn);
-$filter = $_GET['filter'];
+$filter = null;
+if (isset($_GET['filter']))
+{
+  $filter = $_GET['filter'];
+}
 
 $columnInfos = array(
   new SimpleValueColumn("beschreibung", "Beschreibung", true),
