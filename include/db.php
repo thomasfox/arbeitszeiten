@@ -88,7 +88,10 @@ function columnDataAsEditableTable($tableName, $columnInfos, $conn, $whereClause
   {
 	$columnInfo->printColumnsForNewRow($optionsToSelectFrom);
   }
-  echo '<td></td></tr></tbody></table><br/><button type="submit" class="btn btn-primary" name="save" value="save">Speichern</button></form>';
+  echo '<td></td></tr></tbody></table><br/>';
+  echo '<button type="submit" class="btn btn-primary" name="save" value="save">Speichern</button>';
+  echo '<a href="index.html" class="btn btn-secondary mx-2">Zurück</a>';
+  echo '</form>';
 }
 
 function saveEditableTableData($tableName, $columnInfos, $postData, $conn)
@@ -254,7 +257,7 @@ function printFilterForm($label, $table, $column, $conn)
 	}
     echo '<option value="' . $key . '"' . $selectedString .'>' . $displayName . '</option>';
   }
-  echo '</select></div><div class="col-auto"><button type="submit" class="btn btn-primary mb-2">Filter</button></div></div></form>';
+  echo '</select></div><div class="col-auto"><button type="submit" class="btn btn-primary">Filter</button></div></div></form>';
 }
 
 function checkIdValueExists($tableName, $value, $conn)
