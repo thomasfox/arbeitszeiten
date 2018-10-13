@@ -21,11 +21,6 @@ class StringMulticolumn extends Multicolumn
 	$this->foreignTableReferenceColumn = $foreignTableReferenceColumn;
   }
   
-  function addToMainTableColumns()
-  {
-	return false;
-  }
-   
   function getSelectOptions($conn)
   {
 	return $this->querySelectOptions($this->columnValuesDescriptionColumn, $this->columnValuesTable, $conn);
@@ -116,7 +111,7 @@ class StringMulticolumn extends Multicolumn
 	  $statement->bind_param("sii", $valueToInsert, $optionId, $idOfRow); 
 	  if (!$statement->execute())
 	  {
-		echo "Execute of " . $sql . " with binding " . $valueToInsert . ", ". $optionId . ", ". $idOfRow . "failed (" . $statement->error . ")";
+		echo "insertMulticolumnValues(): Execute of " . $sql . " with binding " . $valueToInsert . ", ". $optionId . ", ". $idOfRow . "failed (" . $statement->error . ")";
 	  }		
 	}
   }
@@ -143,19 +138,22 @@ class StringMulticolumn extends Multicolumn
     $statement->bind_param("sii", $value, $optionId, $rowId); 
     if (!$statement->execute())
     {
-	  echo "Execute of " . $sql . " with binding " . $value . ", ". $optionId . ", ". $rowId . "failed (" . $statement->error . ")";
+	  echo "addForeignValuesOfColumn(): Execute of " . $sql . " with binding " . $value . ", ". $optionId . ", ". $rowId . "failed (" . $statement->error . ")";
     }
   }
   
-  protected function updateForeignValuesOfColumn($tableName, $rowId, $optionId, $value, $connn)
+  protected function updateForeignValuesOfColumn($tableName, $rowId, $optionId, $value, $conn)
   {
-    $sql = "INSERT INTO " . $this->columnValuesTable 
-	    . " (" . $tableName . "_id, " . $this->foreignTable . "_id) "
-	    . "VALUES (". $id . ',' . $optionId . ')';
+    $sql = "UPDATE " . $this->foreignTable . " SET " 
+	    . $this->databaseName . "=? WHERE " 
+	    . $this->foreignTableReferenceColumn . "=? AND "
+	    . $this->foreignColumn . "=?";
+    $statement = $conn->prepare($sql);
+    $statement->bind_param("sii", $value, $optionId, $rowId); 
     $conn->query($sql);
-    if ($conn->errno != null)
+    if (!$statement->execute())
     {
-	  echo "error for " . $sql . ":" . $conn->error . "<br>";
+	  echo "updateForeignValuesOfColumn(): error for " . $sql . " with binding " . $value . ", ". $optionId . ", ". $rowId . ":" . $statement->error . "<br>";
     }
   }
 }

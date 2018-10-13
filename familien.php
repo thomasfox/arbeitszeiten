@@ -11,8 +11,10 @@
 include "include/config.php";
 include "include/db.php";
 
-$columnInfos = array(new SimpleValueColumn("name", "Name", true), 
+$columnInfos = array(
+  new SimpleValueColumn("name", "Name", true), 
   new SimpleValueColumn("sollstunden", "Sollstunden", false),
+  new DbQueryResultColumn("iststunden", "Iststunden", "(SELECT SUM(arbeitszeit.minutes) FROM arbeitszeit WHERE arbeitszeit.familie_id=familie.id) / 60 as iststunden"),
   new CheckboxMulticolumn("arbeitsgruppe_id", "Mitglied in Arbeitsgruppe", "arbeitsgruppe", "name", "arbeitsgruppe_familie"));
 
 checkAnyRowDeleted("familie", $columnInfos, $_POST, $conn);

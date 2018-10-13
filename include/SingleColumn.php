@@ -9,9 +9,9 @@ abstract class SingleColumn extends ColumnInfo
 	$this->required = $required;
   }
 
-  function addToMainTableColumns()
+  function getSelectSnippet()
   {
-	return true;
+	return $this->databaseName;
   }
 
   function printColumnHeaders($optionsToSelectFrom)

@@ -50,13 +50,13 @@ function getValuesForMulticolumns($tableName, $columns, $conn)
   return $result;
 }
 
-function columnDataAsEditableTable($tableName, $columnInfos, $conn)
+function columnDataAsEditableTable($tableName, $columnInfos, $conn, $whereClause = '')
 {
   $optionsToSelectFrom = getOptionsToSelectFrom($columnInfos, $conn);
   $valuesForMulticolumns = getValuesForMulticolumns($tableName, $columnInfos, $conn);
-  $columnNames = ColumnInfo::getColumnsOfMainTable($columnInfos);
+  $columnNames = ColumnInfo::getSelectColumnsOfMainTable($columnInfos);
   $concatenatedColumnNames = implode(",", $columnNames);
-  $sql = "SELECT id," . $concatenatedColumnNames . " FROM " . $tableName . " ORDER BY id ASC";
+  $sql = "SELECT id," . $concatenatedColumnNames . " FROM " . $tableName . $whereClause . " ORDER BY id ASC";
   $result = $conn->query($sql);
   echo '<form method="POST"><table class="table table-bordered"><thead class="thead-light"><tr><th scope="column">Nr</th>';
   foreach ($columnInfos as $columnInfo)
@@ -70,7 +70,7 @@ function columnDataAsEditableTable($tableName, $columnInfos, $conn)
     {
       echo "<tr>";
 	  $id = $row["id"];
-      echo '<th scope="row">' . $id . '</th>';
+      echo '<th scope="row">' . $id . '<input type="hidden" name="' . $id . '" value="1"/></th>';
 	  foreach ($columnInfos as $columnInfo)
       {
 		$columnInfo->printColumnsForRow($row, $optionsToSelectFrom, $valuesForMulticolumns);
@@ -98,7 +98,7 @@ function saveEditableTableData($tableName, $columnInfos, $postData, $conn)
     return;
   }
 
-  $columnNames = ColumnInfo::getColumnsOfMainTable($columnInfos);
+  $columnNames = ColumnInfo::getSubmittableColumnsOfMainTable($columnInfos);
   $concatenatedColumnNames = implode(",", $columnNames);
   $sql = "SELECT id," . $concatenatedColumnNames . " FROM " . $tableName . " ORDER BY id ASC";
   $result = $conn->query($sql);
@@ -118,10 +118,15 @@ function saveEditableTableData($tableName, $columnInfos, $postData, $conn)
 
 function doUpdates($tableName, $row, $columnInfos, $postData, $conn)
 {
+  $id = $row["id"];
+  if (!isset($postData[$id]))
+  {
+    // line was not shown
+	return;
+  }
   $optionsForRows = getOptionsToSelectFrom($columnInfos, $conn);
   $valuesForMulticolumns = getValuesForMulticolumns($tableName, $columnInfos, $conn);
 
-  $id = $row["id"];
   $updatedValues = array();
   $foreignValuesToUpdate = array();
   $validationFailed = false;
@@ -228,4 +233,28 @@ function checkDeleteRow($tableName, $id, $columnInfos, $postData, $conn)
 	}
   }
 }
+
+function printFilterForm($label, $table, $column, $conn)
+{
+  $optionsForColumn = ColumnInfo::querySelectOptions($column, $table, $conn);
+  $oldFilterValue = null;
+  if (isset($_GET["filter"]))
+  {
+    $oldFilterValue = $_GET["filter"];
+  }
+  echo '<form class="my-4" method="GET"><div class="form-row">';
+  echo '<label for="filter" class="col-auto col-form-label">' . $label . ' </label><div class="col-auto">';
+  echo '<select class="form-control" name="filter"><option value="">alle</option>';
+  foreach ($optionsForColumn as $key => $displayName)
+  {
+	$selectedString = '';
+	if ($oldFilterValue == $key)
+    {
+	  $selectedString = ' selected="selected"';
+	}
+    echo '<option value="' . $key . '"' . $selectedString .'>' . $displayName . '</option>';
+  }
+  echo '</select></div><div class="col-auto"><button type="submit" class="btn btn-primary mb-2">Filter</button></div></div></form>';
+}
+
 ?>

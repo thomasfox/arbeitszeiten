@@ -15,11 +15,6 @@ class CheckboxMulticolumn extends Multicolumn
 	$this->columnValuesTable = $columnValuesTable;
   }
 
-  function addToMainTableColumns()
-  {
-	return false;
-  }
-  
   function getSelectOptions($conn)
   {
 	return $this->querySelectOptions($this->foreignColumn, $this->foreignTable, $conn);

@@ -9,6 +9,11 @@ class SimpleValueColumn extends SingleColumn
 	$this->datatype = $dataType;
   }
   
+  function isSingleEditableValue()
+  {
+    return true;
+  }
+
   function getSelectOptions($conn)
   {
 	return null;

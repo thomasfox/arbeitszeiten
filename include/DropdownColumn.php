@@ -12,6 +12,11 @@ class DropdownColumn extends SingleColumn
 	$this->foreignColumn = $foreignColumn;
   }
    
+  function isSingleEditableValue()
+  {
+    return true;
+  }
+
   function getSelectOptions($conn)
   {
 	return $this->querySelectOptions($this->foreignColumn, $this->foreignTable, $conn);

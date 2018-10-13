@@ -2,6 +2,7 @@
 include("SingleColumn.php");
 include("SimpleValueColumn.php");
 include("DropdownColumn.php");
+include("DbQueryResultColumn.php");
 include("Multicolumn.php");
 include("StringMulticolumn.php");
 include("CheckboxMulticolumn.php");
@@ -25,12 +26,26 @@ abstract class ColumnInfo
     return $this->databaseName;
   }
   
-  public static function getColumnsOfMainTable($columnInfos)
+  public static function getSelectColumnsOfMainTable($columnInfos)
   {
     $result = array();
     foreach ($columnInfos as $columnInfo)
     {
-	  if ($columnInfo->addToMainTableColumns())
+	  $selectSnippet = $columnInfo->getSelectSnippet();
+	  if (isset($selectSnippet))
+	  {
+        array_push($result, $selectSnippet);
+	  }
+    }
+    return $result;
+  }
+
+  public static function getSubmittableColumnsOfMainTable($columnInfos)
+  {
+    $result = array();
+    foreach ($columnInfos as $columnInfo)
+    {
+	  if ($columnInfo->isSingleEditableValue())
 	  {
         array_push($result, $columnInfo->databaseName);
 	  }
@@ -39,15 +54,22 @@ abstract class ColumnInfo
   }
   
   /**
-   * Returns true if this ColumnInfo is represented by a database column in the main table of the displayed data, false otherwise.
+   * Returns the select Snippet if this ColumnInfo is represented by a database expression in the main table of the displayed data, or null otherwise.
    */
-  public abstract function addToMainTableColumns();
+  public abstract function getSelectSnippet();
+  
+  /**
+   * Returns true if this ColumnInfo is represented by a single editable value, false otherwise.
+   */
+  public abstract function isSingleEditableValue();
 
   /**
    * Returns the select options for a column, as array($key=>$DisplayName).
    * If the column does not have any select options, returns null.
    *
    * @param $conn the mysql connection.
+   *
+   * @return the select options in the form array($databaseValue => $displayName)
    */
   public abstract function getSelectOptions($conn);
   
@@ -131,7 +153,7 @@ abstract class ColumnInfo
   
   public abstract function validateSubmittedValue($submittedValue);
 
-  protected function querySelectOptions($descriptionColumn, $table, $conn)
+  public static function querySelectOptions($descriptionColumn, $table, $conn)
   {
     $sql = "SELECT id," . $descriptionColumn . " FROM " . $table . " ORDER BY id ASC";
     $result = $conn->query($sql);

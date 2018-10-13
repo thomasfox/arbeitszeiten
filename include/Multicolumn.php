@@ -1,6 +1,16 @@
 <?php
 abstract class Multicolumn extends ColumnInfo
 {
+  function getSelectSnippet()
+  {
+	return null;
+  }
+  
+  function isSingleEditableValue()
+  {
+    return false;
+  }
+
   protected function getMulticolumnValuesToInsert($postData, &$multicolumnValuesToInsert, &$validationFailed, $conn)
   {
     $optionsForRow = $this->getSelectOptions($conn);
