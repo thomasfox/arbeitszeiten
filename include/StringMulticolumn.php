@@ -81,8 +81,21 @@ class StringMulticolumn extends Multicolumn
 	  {
 	    $inputValue = $valuesForColumn[$id][$optionId];
 	  }
-      echo '<td><input name="'. $inputName . '" value="' . $inputValue . '" class="form-control" /></td>';
+      echo '<td><input name="'. $inputName . '" value="' . $this->outputValue($inputValue) . '" class="form-control" /></td>';
     }
+  }
+  
+  function outputValue($value)
+  {
+    if (!isset($this->datatype))
+    {
+      return $value;
+    }
+    if ($this->datatype == "f")
+    {
+      return str_replace('.', ',', $value);
+    }
+    return $value;
   }
   
   function printColumnsForNewRow($optionsToSelectFrom)
@@ -98,7 +111,7 @@ class StringMulticolumn extends Multicolumn
   function getDatabaseValue($submittedValue, &$validationFailed)
   {
     $this->validate($submittedValue, $validationFailed);
-    return $submittedValue;
+    return str_replace(',', '.', $submittedValue);
   }
   
   private function validate($submittedValue, &$validationFailed)
