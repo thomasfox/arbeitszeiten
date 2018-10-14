@@ -1,6 +1,8 @@
 <?php
 class StringMulticolumn extends Multicolumn
 {
+  protected $datatype; // one of "s" (String), "i" (Integer), "d" (Date), "f" (Float)
+
   protected $foreignTable; // foreign table containing the displayed value
   
   protected $foreignColumn; // foreign-key-column in the foreign table containing the id of this table's row
@@ -13,9 +15,10 @@ class StringMulticolumn extends Multicolumn
   
   protected $optionsWhereClause;
 
-  function __construct($databaseName, $displayName, $foreignTable, $foreignColumn, $columnValuesTable, $columnValuesDescriptionColumn, $foreignTableReferenceColumn, $optionsWhereClause = "")
+  function __construct($databaseName, $displayName, $datatype, $foreignTable, $foreignColumn, $columnValuesTable, $columnValuesDescriptionColumn, $foreignTableReferenceColumn, $optionsWhereClause = "")
   {
 	parent::__construct($databaseName, $displayName);
+	$this->datatype = $datatype;
 	$this->foreignTable = $foreignTable;
 	$this->foreignColumn = $foreignColumn;
 	$this->columnValuesTable = $columnValuesTable;
@@ -92,6 +95,40 @@ class StringMulticolumn extends Multicolumn
 	}
   }
 
+  function getDatabaseValue($submittedValue, &$validationFailed)
+  {
+    $this->validate($submittedValue, $validationFailed);
+    return $submittedValue;
+  }
+  
+  private function validate($submittedValue, &$validationFailed)
+  {
+    if (!isset($this->datatype))
+    {
+      return;
+    }
+    if (empty($submittedValue))
+    {
+      return;
+    }
+    if ($this->datatype == "f")
+    {
+      $regex = '/[-+]?[0-9]*\.?[0-9]+/';
+    }
+    else if ($this->datatype == "i")
+    {
+      $regex = '/[0-9]+/';
+    }
+    if (isset($regex))
+    {
+      if (preg_match($regex, $submittedValue) == 0)
+      {
+        $validationFailed = true;
+		alertError("Der Wert " . htmlspecialchars($submittedValue) . " ist keine Zahl. Der Datensatz wurde nicht gespeichert.");
+      }
+    }
+  }
+  
   function getValuesToInsert($postData, &$insertedValues, &$multicolumnValuesToInsert, &$validationFailed, $conn)
   {
     $this->getMulticolumnValuesToInsert($postData, $multicolumnValuesToInsert, $validationFailed, $conn);

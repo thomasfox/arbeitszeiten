@@ -169,7 +169,7 @@ function doInserts($tableName, $columnInfos, $postData, $conn)
   {
     $columnInfo->getValuesToInsert($postData, $insertedValues, $multicolumnValuesToInsert, $validationError, $conn);
   }
-  if (count($insertedValues) > 0 || count($multicolumnValuesToInsert) > 0 && !$validationError)
+  if ((count($insertedValues) > 0 || count($multicolumnValuesToInsert) > 0) && !$validationError)
   {
     foreach ($columnInfos as $columnInfo)
 	{

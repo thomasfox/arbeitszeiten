@@ -79,6 +79,11 @@ class CheckboxMulticolumn extends Multicolumn
 	}
   }
 
+  function getDatabaseValue($submittedValue, &$validationFailed)
+  {
+    return $submittedValue;
+  }
+  
   function getValuesToInsert($postData, &$insertedValues, &$multicolumnValuesToInsert, &$validationFailed, $conn)
   {
     $this->getMulticolumnValuesToInsert($postData, $multicolumnValuesToInsert, $validationFailed, $conn);

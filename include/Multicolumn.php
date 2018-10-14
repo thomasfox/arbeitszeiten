@@ -20,7 +20,7 @@ abstract class Multicolumn extends ColumnInfo
 	  $submittedValue = "";
 	  if (isset($postData[$inputName]))
 	  {
-	    $submittedValue = trim($postData[$inputName]);
+	    $submittedValue = $this->getDatabaseValue(trim($postData[$inputName]), $validationFailed);
 	  }
       if (!empty($submittedValue))
 	  {
@@ -32,12 +32,7 @@ abstract class Multicolumn extends ColumnInfo
 	  }
 	}
   }
-  
-  function getDatabaseValue($submittedValue, &$validationFailed)
-  {
-    return $submittedValue;
-  }
-  
+
   function fillValuesToUpdate(&$valuesToUpdate, &$foreignValuesToUpdate, $postData, $row, $optionsToSelectFrom, $valuesForMulticolumns, &$validationFailed)
   {
     $optionsForColumn = $optionsToSelectFrom[$this->databaseName];
@@ -49,6 +44,7 @@ abstract class Multicolumn extends ColumnInfo
 	$toUpdate = &$foreignValuesToUpdate[$this->databaseName]["update"];
 	$toAdd = &$foreignValuesToUpdate[$this->databaseName]["add"];
 	$id = $row["id"];
+	$validationFailed = false;
     foreach ($optionsForColumn as $optionId=>$optionDisplayName)
     {
 	  $inputName = $this->databaseName . $id . '_' . $optionId;
@@ -56,6 +52,7 @@ abstract class Multicolumn extends ColumnInfo
 	  if (isset($postData[$inputName]))
 	  {
 	    $submittedValue = trim($postData[$inputName]);
+	    $submittedValue = $this->getDatabaseValue(trim($postData[$inputName]), $validationFailed);
 	  }
 	  $dbValue = "";
 	  if (isset($dbValuesForRow[$id][$optionId]))
@@ -77,6 +74,12 @@ abstract class Multicolumn extends ColumnInfo
 		  $toRemove[$optionId] = 1;
 		}	
 	  }
+	}
+	if ($validationFailed)
+	{
+	  $foreignValuesToUpdate[$this->databaseName]["remove"] = array();
+	  $foreignValuesToUpdate[$this->databaseName]["update"] = array();
+	  $foreignValuesToUpdate[$this->databaseName]["add"] = array();
 	}
   }
   
