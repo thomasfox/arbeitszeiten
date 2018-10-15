@@ -48,7 +48,7 @@ class CheckboxMulticolumn extends Multicolumn
   {
     foreach ($optionsToSelectFrom[$this->databaseName] as $displayName)
 	{
-      echo '<th scope="column">' . $displayName . '</th>';
+      echo '<th scope="column" class="usag">' . $displayName . '</th>';
 	}
   }
   
