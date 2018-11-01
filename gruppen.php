@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="css/arbeitsgruppen.css" />
 </head>
 <body>
+  <script src="js/arbeitszeiten.js"></script>
   <div class="container-fluid">
     <h1>Verwaltung der Arbeitsgruppen</h1>
 <?php

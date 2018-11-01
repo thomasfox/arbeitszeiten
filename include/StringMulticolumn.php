@@ -81,7 +81,7 @@ class StringMulticolumn extends Multicolumn
 	  {
 	    $inputValue = $valuesForColumn[$id][$optionId];
 	  }
-      echo '<td><input name="'. $inputName . '" value="' . $this->outputValue($inputValue) . '" class="form-control" /></td>';
+      echo '<td><input name="'. $inputName . '" value="' . $this->outputValue($inputValue) . '" class="form-control"  onchange="markChanged()"/></td>';
     }
   }
   
@@ -104,7 +104,7 @@ class StringMulticolumn extends Multicolumn
 	foreach ($optionsForColumn as $optionId => $optionDisplayName)
 	{
 	  $inputName = $this->databaseName . '_' . $optionId;
-	  echo '<td><input name="'. $inputName . '" class="form-control"/></td>';
+	  echo '<td><input name="'. $inputName . '" class="form-control" onchange="markChanged()"/></td>';
 	}
   }
 

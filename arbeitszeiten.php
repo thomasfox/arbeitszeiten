@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="css/arbeitsgruppen.css" />
 </head>
 <body>
+  <script src="js/arbeitszeiten.js"></script>
   <div class="container-fluid">
     <h1>Verwaltung der Arbeitsaufträge und Arbeitszeiten</h1>
 
@@ -14,7 +15,6 @@
 include "include/config.php";
 include "include/db.php";
 
-printFilterForm("Arbeitsgruppe", "arbeitsgruppe", "name", $conn);
 $filter = null;
 $filterWhereClause = "";
 if (isset($_GET['filter']))
@@ -43,7 +43,7 @@ $columnInfos = array(
 
 checkAnyRowDeleted("arbeitsauftrag", $columnInfos, $_POST, $conn);
 saveEditableTableData("arbeitsauftrag", $columnInfos, $_POST, $conn);
-columnDataAsEditableTable("arbeitsauftrag", $columnInfos, $conn, empty($filter) ? null : ' WHERE arbeitsgruppe_id = ' . $filter);
+columnDataAsEditableTable("arbeitsauftrag", $columnInfos, $conn, empty($filter) ? null : ' WHERE arbeitsgruppe_id = ' . $filter, "Arbeitsgruppe", "arbeitsgruppe", "name");
 ?>
   </div>
 </body>

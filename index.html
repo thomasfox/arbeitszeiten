@@ -12,10 +12,16 @@
     <div class="my-4">
       <p>Hier können die Elternarbeitszeiten der Unterseeschule verwaltet werden.<p>
     </div>
+    <div class="my-4">
+      <a href="arbeitszeiten.php" class="btn btn-primary mx-2">Arbeitszeiten</a>
+      <a href="gruppen.php" class="btn btn-primary mx-2">Arbeitsgruppen</a>
+      <a href="familien.php" class="btn btn-primary mx-2">Familien</a>
+    </div>
     <h2>Hinweise zur Benutzung</h2>
     <div>
       <p>
-        Die in den Formularen angezeigten Zeilen werden nur beim Klick auf "Speichern" unten oder "Löschen" neben einer Zeile gespeichert. Beim Klick auf "Zurück" oder "Filter" gehen ungespeicherte Änderungen verloren!
+        Die in den Formularen angezeigten Zeilen werden nur beim Klick auf "Speichern" unten oder "Löschen" neben einer Zeile gespeichert. 
+        Beim Klick auf "Zurück" oder beim Auswählen eines Filters gehen ungespeicherte Änderungen verloren; es wird jedoch nochmals gefragt, ob man das wirklich möchte.
       </p>
       <h4>Arbeitsgruppen-Ansicht</h4>
       <p>
@@ -28,15 +34,29 @@
       </p>
       <h4>Arbeitszeiten-Ansicht</h4>
       <p>
-        In der Arbeitszeiten-Ansicht kann man nach Arbeitsgruppen filtern. Dieser Filter filtert sowohl die Spalten (Familien) als auch die Zeilen (Arbeitsaufträge) so, dass nur die Familien und Arbeitsaufträge, die mit dieser Gruppe gekennzeichnet sind, sichtbar sind. Wie schon oben erwähnt, beim Klick auf "Filter" wird nicht gespeichert. 
+        In der Arbeitszeiten-Ansicht kann man nach Arbeitsgruppen filtern. Dieser Filter filtert sowohl die Spalten (Familien) als auch die Zeilen (Arbeitsaufträge) so, dass nur die Familien und Arbeitsaufträge, die mit dieser Gruppe gekennzeichnet sind, sichtbar sind. 
+        Wie schon oben erwähnt, werden beim Ändern des Filters die Änderungen verworfen (es gibt aber noch eine Sicherheitsabfrage). 
         Die Arbeitsaufträge werden in der Reihenfolge angezeigt, in der sie hier eingetragen wurden (das will man wahrscheinlich noch auf Sortierung nach Datum ändern).
       </p>
+      <h4>Javascript</h4>
+      <p>
+        Ohne Javascript funktionieren die Seiten leider nicht vollständig.
+      </p>
+      <h4>Version</h4>
+      <p>
+        Die installierte Version der Anwendung ist 1.1 (1.11.2018)
+      </p>
+      <h4>Änderungen</h4>
+      <ul>
+        <li>Version 1.1
+          <ul>
+            <li>Zeile für den neuen Eintrag an den Tabellenanfang verschoben</li>
+            <li>Abbrechen und Filter ändern fragen vor dem Verlassen der Seite nochmal nach, wenn ein Wert geändert wurde</li>
+            <li>Filter ändern Button entfernt, stattdessen wird bei der Auswahl eines neuen Filters gleich gewechselt</li>
+          </ul>
+        </li>
+      </ul>
     </div>
-	<div class="my-4">
-	  <a href="arbeitszeiten.php" class="btn btn-primary mx-2">Arbeitszeiten</a>
-	  <a href="gruppen.php" class="btn btn-primary mx-2">Arbeitsgruppen</a>
-	  <a href="familien.php" class="btn btn-primary mx-2">Familien</a>
-	</div>
   </div>
 </body>
 </html>

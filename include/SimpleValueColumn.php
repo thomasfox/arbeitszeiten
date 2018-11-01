@@ -27,12 +27,12 @@ class SimpleValueColumn extends SingleColumn
     {
       $value = DateTime::createFromFormat("Y-m-d", $value)->format("d.m.Y");
     }
-    echo '<td><input name="'. $this->databaseName . $id . '" value="' . $value . '" class="form-control"/></td>';
+    echo '<td><input name="'. $this->databaseName . $id . '" value="' . $value . '" class="form-control" onchange="markChanged()" /></td>';
   }
   
   function printColumnsForNewRow($optionsToSelectFrom)
   {
-    echo '<td><input name="'. $this->databaseName . '" class="form-control"/></td>';
+    echo '<td><input name="'. $this->databaseName . '" class="form-control" onchange="markChanged()"/></td>';
   }
 
   function getDatabaseValue($submittedValue, &$validationFailed)

@@ -50,7 +50,7 @@ function getValuesForMulticolumns($tableName, $columns, $conn)
   return $result;
 }
 
-function columnDataAsEditableTable($tableName, $columnInfos, $conn, $whereClause = '')
+function columnDataAsEditableTable($tableName, $columnInfos, $conn, $whereClause = '', $filterLabel=null, $filterValuesTable=null, $filterValuesColumn=null)
 {
   $optionsToSelectFrom = getOptionsToSelectFrom($columnInfos, $conn);
   $valuesForMulticolumns = getValuesForMulticolumns($tableName, $columnInfos, $conn);
@@ -59,22 +59,38 @@ function columnDataAsEditableTable($tableName, $columnInfos, $conn, $whereClause
   $sql = "SELECT id," . $concatenatedColumnNames . " FROM " . $tableName . $whereClause . " ORDER BY id ASC";
   $result = $conn->query($sql);
   echo '<form method="POST"><table class="table table-bordered"><thead class="thead-light"><tr><th scope="column">Nr</th>';
+  echo '<div class="form-inline my-3">';
+  echo '<button type="submit" class="btn btn-primary px-5" name="save" value="save">Speichern</button>';
+  echo '<a href="#" class="btn btn-secondary mx-2" onclick="askForChangedValueSave(this, \'index.html\')" >Zurück</a>';
+  
+  if ($filterLabel != null)
+  {
+  	printFilter($filterLabel, $filterValuesTable, $filterValuesColumn, $conn);
+  }
+  echo '</div>';
+  
   foreach ($columnInfos as $columnInfo)
   {
-	$columnInfo->printColumnHeaders($optionsToSelectFrom);
+    $columnInfo->printColumnHeaders($optionsToSelectFrom);
   }
   echo '<th scope="column"></th></tr></thead><tbody>';
+  echo '<tr><th scope="row">neu:</td>';
+  foreach ($columnInfos as $columnInfo)
+  {
+    $columnInfo->printColumnsForNewRow($optionsToSelectFrom);
+  }
+  echo '<td></td></tr>';
   if ($conn->errno == 0)
   {
     while($row = $result->fetch_assoc()) 
     {
       echo "<tr>";
-	  $id = $row["id"];
+      $id = $row["id"];
       echo '<th scope="row">' . $id . '<input type="hidden" name="' . $id . '" value="1"/></th>';
-	  foreach ($columnInfos as $columnInfo)
+      foreach ($columnInfos as $columnInfo)
       {
-		$columnInfo->printColumnsForRow($row, $optionsToSelectFrom, $valuesForMulticolumns);
-	  }
+        $columnInfo->printColumnsForRow($row, $optionsToSelectFrom, $valuesForMulticolumns);
+      }
       echo '<td><button type="submit" class="btn btn-secondary" name="delete" value="' . $id . '">Löschen</button></td>';
       echo "</tr>";  
     }
@@ -83,14 +99,7 @@ function columnDataAsEditableTable($tableName, $columnInfos, $conn, $whereClause
   {
     alertError("columnDataAsEditableTable(): error for " . $sql . ":" . $conn->error);
   }
-  echo '<tr><th scope="row">neu:</td>';
-  foreach ($columnInfos as $columnInfo)
-  {
-	$columnInfo->printColumnsForNewRow($optionsToSelectFrom);
-  }
-  echo '<td></td></tr></tbody></table><br/>';
-  echo '<button type="submit" class="btn btn-primary" name="save" value="save">Speichern</button>';
-  echo '<a href="index.html" class="btn btn-secondary mx-2">Zurück</a>';
+  echo '</tbody></table>';
   echo '</form>';
 }
 
@@ -125,7 +134,7 @@ function doUpdates($tableName, $row, $columnInfos, $postData, $conn)
   if (!isset($postData[$id]))
   {
     // line was not shown
-	return;
+    return;
   }
   $optionsForRows = getOptionsToSelectFrom($columnInfos, $conn);
   $valuesForMulticolumns = getValuesForMulticolumns($tableName, $columnInfos, $conn);
@@ -237,7 +246,7 @@ function checkDeleteRow($tableName, $id, $columnInfos, $postData, $conn)
   }
 }
 
-function printFilterForm($label, $table, $column, $conn)
+function printFilter($label, $table, $column, $conn)
 {
   $optionsForColumn = ColumnInfo::querySelectOptions($column, $table, "", $conn);
   $oldFilterValue = null;
@@ -245,9 +254,8 @@ function printFilterForm($label, $table, $column, $conn)
   {
     $oldFilterValue = $_GET["filter"];
   }
-  echo '<form class="my-4" method="GET"><div class="form-row">';
-  echo '<label for="filter" class="col-auto col-form-label">' . $label . ' </label><div class="col-auto">';
-  echo '<select class="form-control" name="filter"><option value="">alle</option>';
+  echo '<label for="filter" class="col-auto col-form-label ml-5">' . $label . ' </label>';
+  echo '<div class="col-auto"><select class="form-control" name="filter" id="filter" data-initial="' . $oldFilterValue . '" onchange="applyFilter(\'filter\',window.filter.value)"><option value="">alle</option>';
   foreach ($optionsForColumn as $key => $displayName)
   {
 	$selectedString = '';
@@ -257,7 +265,7 @@ function printFilterForm($label, $table, $column, $conn)
 	}
     echo '<option value="' . $key . '"' . $selectedString .'>' . $displayName . '</option>';
   }
-  echo '</select></div><div class="col-auto"><button type="submit" class="btn btn-primary">Filter</button></div></div></form>';
+  echo '</select></div>';
 }
 
 function checkIdValueExists($tableName, $value, $conn)

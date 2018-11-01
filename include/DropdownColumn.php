@@ -26,7 +26,7 @@ class DropdownColumn extends SingleColumn
   {
 	$id = $row["id"];
     $value = $row[$this->databaseName];
-    echo '<td><select name="'. $this->databaseName . $id . '" class="form-control">';
+    echo '<td><select name="'. $this->databaseName . $id . '" class="form-control" onchange="markChanged()">';
     echo '<option value=""></option>"';
     $optionsForColumn = $optionsToSelectFrom[$this->databaseName];
     foreach ($optionsForColumn as $optionId => $optionDisplayName)
@@ -43,7 +43,7 @@ class DropdownColumn extends SingleColumn
   
   function printColumnsForNewRow($optionsToSelectFrom)
   {
-    echo '<td><select name="'. $this->databaseName . '" class="form-control">"';
+    echo '<td><select name="'. $this->databaseName . '" class="form-control" onchange="markChanged()">';
     echo '<option value=""></option>"';
     $optionsForColumn = $optionsToSelectFrom[$this->databaseName];
     foreach ($optionsForColumn as $optionId=>$optionDisplayName)

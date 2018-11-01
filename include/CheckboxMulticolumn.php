@@ -65,7 +65,7 @@ class CheckboxMulticolumn extends Multicolumn
 	  {
 	    $checkedString = ' checked="checked"';
 	  }
-	  echo '<td><input type="checkbox" name="'. $inputName . '" value="1" ' . $checkedString . '/></td>';
+	  echo '<td><input type="checkbox" name="'. $inputName . '" value="1" ' . $checkedString . ' onchange="markChanged()"/></td>';
     }
   }
   
@@ -75,7 +75,7 @@ class CheckboxMulticolumn extends Multicolumn
 	foreach ($optionsForColumn as $optionId => $optionDisplayName)
 	{
 	  $inputName = $this->databaseName . '_' . $optionId;
-	  echo '<td><input type="checkbox" name="'. $inputName . '" value="1" /></td>';
+	  echo '<td><input type="checkbox" name="'. $inputName . '" value="1" onchange="markChanged()" /></td>';
 	}
   }
 
