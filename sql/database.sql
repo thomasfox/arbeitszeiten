@@ -23,7 +23,7 @@ CREATE TABLE `arbeitsgruppe_familie` (
 CREATE TABLE `arbeitsauftrag` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `beschreibung` varchar(45) NOT NULL,
-  `workdate` date DEFAULT NULL,
+  `workdate` date NOT NULL,
   `arbeitsgruppe_id` int(11) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `arbeitsauftrag_arbeitsgruppe_idx` (`arbeitsgruppe_id`),
