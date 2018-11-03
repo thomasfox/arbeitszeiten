@@ -25,18 +25,24 @@
       </p>
       <h4>Arbeitsgruppen-Ansicht</h4>
       <p>
-        In der Arbeitsgruppen-Ansicht kann man Arbeitsgruppen anlegen, umbenennen und löschen. Beim Umbenennen einer Arbeitsgruppe bleiben die Arbeitsstunden erhalten. Beim Löschen einer Gruppe bleiben die zugehörigen Familien und Arbeitsaufträge samt Arbeitsstunden erhalten, sie sind aber nicht mehr dieser Gruppe zugeordnet.
+        In der Arbeitsgruppen-Ansicht kann man Arbeitsgruppen anlegen, umbenennen und löschen. 
+        Beim Umbenennen einer Arbeitsgruppe bleiben die Arbeitsstunden erhalten. 
+        Beim Löschen einer Gruppe bleiben die zugehörigen Familien und Arbeitsaufträge samt Arbeitsstunden erhalten, sie sind aber nicht mehr dieser Gruppe zugeordnet.
+        Die Arbeitsgruppen werden nach Name sortiert angezeigt.
       </p>
       <h4>Familien-Ansicht</h4>
       <p>
-        In der Familien-Ansicht kann man Familien anlegen, umbenennen und löschen. Beim Umbenennen einer Familie bleiben die Arbeitsstunden erhalten. Das Löschen einer Familie ist nur möglich, wenn keine Arbeitsstunden auf die Familie gebucht sind, sonst wird ein Datenbank-Fehler geworfen (müssen wir noch sehen, ob das praktikabel ist).
-        Die Familien werden in der Reihenfolge angezeigt, in der sie hier eingetragen werden (das will man wahrscheinlich noch auf Sortierung nach Namen ändern).
+        In der Familien-Ansicht kann man Familien anlegen, umbenennen und löschen.
+        Beim Umbenennen einer Familie bleiben die Arbeitsstunden erhalten.
+        Das Löschen einer Familie ist nur möglich, wenn keine Arbeitsstunden auf die Familie gebucht sind, sonst wird ein Datenbank-Fehler geworfen (müssen wir noch sehen, ob das praktikabel ist).
+        Die Familien werden nach Name sortiert angezeigt.
       </p>
       <h4>Arbeitszeiten-Ansicht</h4>
       <p>
-        In der Arbeitszeiten-Ansicht kann man nach Arbeitsgruppen filtern. Dieser Filter filtert sowohl die Spalten (Familien) als auch die Zeilen (Arbeitsaufträge) so, dass nur die Familien und Arbeitsaufträge, die mit dieser Gruppe gekennzeichnet sind, sichtbar sind. 
+        In der Arbeitszeiten-Ansicht kann man nach Arbeitsgruppen filtern. 
+        Dieser Filter filtert sowohl die Spalten (Familien) als auch die Zeilen (Arbeitsaufträge) so, dass nur die Familien und Arbeitsaufträge, die mit dieser Gruppe gekennzeichnet sind, sichtbar sind. 
         Wie schon oben erwähnt, werden beim Ändern des Filters die Änderungen verworfen (es gibt aber noch eine Sicherheitsabfrage). 
-        Die Arbeitsaufträge werden in der Reihenfolge angezeigt, in der sie hier eingetragen wurden (das will man wahrscheinlich noch auf Sortierung nach Datum ändern).
+        Die Arbeitsaufträge werden nach Datum sortiert angezeigt.
       </p>
       <h4>Javascript</h4>
       <p>
@@ -52,9 +58,11 @@
           <ul>
             <li>Die Familien in Arbeitszeitentabelle werden jetzt alphabetisch sortiert</li>
             <li>Das Datum in den Arbeitszeiten ist jetzt wirklich ein Pflichtfeld</li>
+            <li>Arbeitsgruppen und Familien werden jetzt nach Name sortiert<li>
+            <li>Arbeitszeiten werden jetzt nach Datum sortiert<li>
           </ul>
         </li>
-        <li>Version 1.1
+        <li>Version 1.1 (1.11.2018)
           <ul>
             <li>Zeile für den neuen Eintrag an den Tabellenanfang verschoben</li>
             <li>Abbrechen und Filter ändern fragen vor dem Verlassen der Seite nochmal nach, wenn ein Wert geändert wurde</li>

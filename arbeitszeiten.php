@@ -43,7 +43,7 @@ $columnInfos = array(
 
 checkAnyRowDeleted("arbeitsauftrag", $columnInfos, $_POST, $conn);
 saveEditableTableData("arbeitsauftrag", $columnInfos, $_POST, $conn);
-columnDataAsEditableTable("arbeitsauftrag", $columnInfos, $conn, empty($filter) ? null : ' WHERE arbeitsgruppe_id = ' . $filter, "Arbeitsgruppe", "arbeitsgruppe", "name");
+columnDataAsEditableTable("arbeitsauftrag", $columnInfos, $conn, "workdate,id ASC", empty($filter) ? null : ' WHERE arbeitsgruppe_id = ' . $filter, "Arbeitsgruppe", "arbeitsgruppe", "name");
 ?>
   </div>
 </body>

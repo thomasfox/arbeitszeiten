@@ -18,7 +18,7 @@ $columnInfos = array(new SimpleValueColumn("name", "Name", true));
 
 checkAnyRowDeleted("arbeitsgruppe", $columnInfos, $_POST, $conn);
 saveEditableTableData("arbeitsgruppe", $columnInfos, $_POST, $conn);
-columnDataAsEditableTable("arbeitsgruppe", $columnInfos, $conn);
+columnDataAsEditableTable("arbeitsgruppe", $columnInfos, $conn, "name,id ASC");
 
 ?>
   </div>

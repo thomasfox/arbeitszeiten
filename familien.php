@@ -22,7 +22,7 @@ $columnInfos = array(
 
 checkAnyRowDeleted("familie", $columnInfos, $_POST, $conn);
 saveEditableTableData("familie", $columnInfos, $_POST, $conn);
-columnDataAsEditableTable("familie", $columnInfos, $conn);
+columnDataAsEditableTable("familie", $columnInfos, $conn, "name,id ASC");
 
 ?>
   </div>

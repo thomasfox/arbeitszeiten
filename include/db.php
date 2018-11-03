@@ -50,13 +50,13 @@ function getValuesForMulticolumns($tableName, $columns, $conn)
   return $result;
 }
 
-function columnDataAsEditableTable($tableName, $columnInfos, $conn, $whereClause = '', $filterLabel=null, $filterValuesTable=null, $filterValuesColumn=null)
+function columnDataAsEditableTable($tableName, $columnInfos, $conn, $orderByClause="id ASC", $whereClause = '', $filterLabel=null, $filterValuesTable=null, $filterValuesColumn=null)
 {
   $optionsToSelectFrom = getOptionsToSelectFrom($columnInfos, $conn);
   $valuesForMulticolumns = getValuesForMulticolumns($tableName, $columnInfos, $conn);
   $columnNames = ColumnInfo::getSelectColumnsOfMainTable($columnInfos);
   $concatenatedColumnNames = implode(",", $columnNames);
-  $sql = "SELECT id," . $concatenatedColumnNames . " FROM " . $tableName . $whereClause . " ORDER BY id ASC";
+  $sql = "SELECT id," . $concatenatedColumnNames . " FROM " . $tableName . $whereClause . " ORDER BY " . $orderByClause;
   $result = $conn->query($sql);
   echo '<form method="POST"><table class="table table-bordered"><thead class="thead-light"><tr><th scope="column">Nr</th>';
   echo '<div class="form-inline my-3">';
@@ -80,7 +80,7 @@ function columnDataAsEditableTable($tableName, $columnInfos, $conn, $whereClause
     $columnInfo->printColumnsForNewRow($optionsToSelectFrom);
   }
   echo '<td></td></tr>';
-  if ($conn->errno == 0)
+  if ($conn->errno == 0 && $result != false)
   {
     while($row = $result->fetch_assoc()) 
     {
