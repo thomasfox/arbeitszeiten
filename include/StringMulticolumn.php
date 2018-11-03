@@ -7,15 +7,17 @@ class StringMulticolumn extends Multicolumn
   
   protected $foreignColumn; // foreign-key-column in the foreign table containing the id of this table's row
   
-  protected $columnValuesTable;
+  protected $columnValuesTable; // table which defines the different columns in this multicolumn 
   
-  protected $columnValuesDescriptionColumn;
+  protected $columnValuesDescriptionColumn; // the column in $columnValuesTable which contains the diaplayname of the columns in this multicolumn
   
   protected $foreignTableReferenceColumn;
   
-  protected $optionsWhereClause;
+  protected $optionsWhereClause; // where clause limiting the values in $columnValuesTable
 
-  function __construct($databaseName, $displayName, $datatype, $foreignTable, $foreignColumn, $columnValuesTable, $columnValuesDescriptionColumn, $foreignTableReferenceColumn, $optionsWhereClause = "")
+  protected $optionsOrderByClause; // order by clause for ordering the values in $columnValuesTable
+  
+  function __construct($databaseName, $displayName, $datatype, $foreignTable, $foreignColumn, $columnValuesTable, $columnValuesDescriptionColumn, $foreignTableReferenceColumn, $optionsWhereClause = "", $optionsOrderByClause = "")
   {
 	parent::__construct($databaseName, $displayName);
 	$this->datatype = $datatype;
@@ -25,11 +27,12 @@ class StringMulticolumn extends Multicolumn
 	$this->columnValuesDescriptionColumn = $columnValuesDescriptionColumn;
 	$this->foreignTableReferenceColumn = $foreignTableReferenceColumn;
 	$this->optionsWhereClause = $optionsWhereClause;
+	$this->optionsOrderByClause = $optionsOrderByClause;
   }
   
   function getSelectOptions($conn)
   {
-	return $this->querySelectOptions($this->columnValuesDescriptionColumn, $this->columnValuesTable, $this->optionsWhereClause, $conn);
+	return $this->querySelectOptions($this->columnValuesDescriptionColumn, $this->columnValuesTable, $this->optionsWhereClause, $this->optionsOrderByClause, $conn);
   }
   
   function getMulticolumnValues($tableName, $conn)

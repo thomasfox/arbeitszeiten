@@ -19,7 +19,7 @@ class DropdownColumn extends SingleColumn
 
   function getSelectOptions($conn)
   {
-	return $this->querySelectOptions($this->foreignColumn, $this->foreignTable, "", $conn);
+	return $this->querySelectOptions($this->foreignColumn, $this->foreignTable, "", "", $conn);
   }
   
   function printColumnsForRow($row, $optionsToSelectFrom, $valuesForMulticolumns)

@@ -248,7 +248,7 @@ function checkDeleteRow($tableName, $id, $columnInfos, $postData, $conn)
 
 function printFilter($label, $table, $column, $conn)
 {
-  $optionsForColumn = ColumnInfo::querySelectOptions($column, $table, "", $conn);
+  $optionsForColumn = ColumnInfo::querySelectOptions($column, $table, "", "", $conn);
   $oldFilterValue = null;
   if (isset($_GET["filter"]))
   {

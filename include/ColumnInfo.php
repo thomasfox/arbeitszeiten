@@ -153,9 +153,13 @@ abstract class ColumnInfo
   
   public abstract function validateSubmittedValue($submittedValue);
 
-  public static function querySelectOptions($descriptionColumn, $table, $whereClause, $conn)
+  public static function querySelectOptions($descriptionColumn, $table, $whereClause, $orderByClause, $conn)
   {
-    $sql = "SELECT id," . $descriptionColumn . " FROM " . $table . $whereClause . " ORDER BY id ASC";
+    if (empty($orderByClause))
+    {
+      $orderByClause = "id ASC";
+    }
+    $sql = "SELECT id," . $descriptionColumn . " FROM " . $table . $whereClause . " ORDER BY " . $orderByClause;
     $result = $conn->query($sql);
 	$selectOptions = null;
     if ($conn->errno == 0)

@@ -17,7 +17,7 @@ class CheckboxMulticolumn extends Multicolumn
 
   function getSelectOptions($conn)
   {
-	return $this->querySelectOptions($this->foreignColumn, $this->foreignTable, "", $conn);
+	return $this->querySelectOptions($this->foreignColumn, $this->foreignTable, "", "", $conn);
   }
 
   function getMulticolumnValues($tableName, $conn)
