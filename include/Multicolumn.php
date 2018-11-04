@@ -10,7 +10,17 @@ abstract class Multicolumn extends ColumnInfo
   {
     return false;
   }
-
+  
+  function getColumnHeaders($optionsToSelectFrom)
+  {
+    $result = array();
+    foreach ($optionsToSelectFrom[$this->databaseName] as $displayName)
+    {
+      array_push($result, $displayName);
+    }
+    return $result;
+  }
+  
   protected function getMulticolumnValuesToInsert($postData, &$multicolumnValuesToInsert, &$validationFailed, $conn)
   {
     $optionsForRow = $this->getSelectOptions($conn);

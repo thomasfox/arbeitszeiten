@@ -19,9 +19,19 @@ class SimpleValueColumn extends SingleColumn
 	return null;
   }
   
+  function getColumnValuesForRow($row, $optionsToSelectFrom, $valuesForMulticolumns)
+  {
+    $value = $row[$this->databaseName];
+    if ($this->datatype == "d" and !empty($value))
+    {
+      $value = DateTime::createFromFormat("Y-m-d", $value)->format("d.m.Y");
+    }
+    return array($value);
+  }
+  
   function printColumnsForRow($row, $optionsToSelectFrom, $valuesForMulticolumns)
   {
-	$id = $row["id"];
+    $id = $row["id"];
     $value = $row[$this->databaseName];
     if ($this->datatype == "d" and !empty($value))
     {

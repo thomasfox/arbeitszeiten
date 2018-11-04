@@ -14,9 +14,10 @@ abstract class SingleColumn extends ColumnInfo
 	return $this->databaseName;
   }
 
-  function printColumnHeaders($optionsToSelectFrom)
+  function getColumnHeaders($optionsToSelectFrom)
   {
-    echo '<th scope="column" class="usag">' . $this->getDisplayName() . '</th>';
+    $result = array($this->getDisplayName());
+    return $result;
   }
   
   function getMulticolumnValues($tableName, $conn)

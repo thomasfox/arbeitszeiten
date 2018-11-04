@@ -1,16 +1,3 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8"> 
-<title>Unterseeschule - Arbeitszeit-Verwaltung</title>
-<link rel="stylesheet" href="css/bootstrap.min.css" />
-<link rel="stylesheet" href="css/arbeitsgruppen.css" />
-</head>
-<body>
-  <script src="js/arbeitszeiten.js"></script>
-  <div class="container-fluid">
-    <h1>Verwaltung der Arbeitsaufträge und Arbeitszeiten</h1>
-
 <?php
 include "include/config.php";
 include "include/db.php";
@@ -41,9 +28,24 @@ $columnInfos = array(
   new SimpleValueColumn("workdate", "Datum(TT.MM.JJJJ)", true, "d"),
   new StringMulticolumn("stunden", "Arbeitsstunden", "f", "arbeitszeit", "arbeitsauftrag_id", "familie", "name", "familie_id", $filterWhereClause, " name,id ASC "));
 
+checkCsvExport("arbeitsauftrag", $columnInfos, $_POST, $conn, "workdate,id ASC", empty($filter) ? '' : ' WHERE arbeitsgruppe_id = ' . $filter, "Arbeitsgruppe", "arbeitsgruppe", "name");
+?>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"> 
+<title>Unterseeschule - Arbeitszeit-Verwaltung</title>
+<link rel="stylesheet" href="css/bootstrap.min.css" />
+<link rel="stylesheet" href="css/arbeitsgruppen.css" />
+</head>
+<body>
+  <script src="js/arbeitszeiten.js"></script>
+  <div class="container-fluid">
+    <h1>Verwaltung der Arbeitsaufträge und Arbeitszeiten</h1>
+<?php
 checkAnyRowDeleted("arbeitsauftrag", $columnInfos, $_POST, $conn);
 saveEditableTableData("arbeitsauftrag", $columnInfos, $_POST, $conn);
-columnDataAsEditableTable("arbeitsauftrag", $columnInfos, $conn, "workdate,id ASC", empty($filter) ? null : ' WHERE arbeitsgruppe_id = ' . $filter, "Arbeitsgruppe", "arbeitsgruppe", "name");
+columnDataAsEditableTable("arbeitsauftrag", $columnInfos, $conn, "workdate,id ASC", empty($filter) ? '' : ' WHERE arbeitsgruppe_id = ' . $filter, "Arbeitsgruppe", "arbeitsgruppe", "name");
 ?>
   </div>
 </body>

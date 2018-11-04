@@ -22,21 +22,37 @@ class DropdownColumn extends SingleColumn
 	return $this->querySelectOptions($this->foreignColumn, $this->foreignTable, "", "", $conn);
   }
   
+  function getColumnValuesForRow($row, $optionsToSelectFrom, $valuesForMulticolumns)
+  {
+  	$value = $row[$this->databaseName];
+    $optionsForColumn = $optionsToSelectFrom[$this->databaseName];
+    $displayValue = "";
+    foreach ($optionsForColumn as $optionId => $optionDisplayName)
+    {
+      if ($value == $optionId)
+      {
+        $displayValue = $optionDisplayName;
+        break;
+      }
+    }
+    return array($displayValue);
+  }
+  
   function printColumnsForRow($row, $optionsToSelectFrom, $valuesForMulticolumns)
   {
-	$id = $row["id"];
+    $id = $row["id"];
     $value = $row[$this->databaseName];
     echo '<td><select name="'. $this->databaseName . $id . '" class="form-control" onchange="markChanged()">';
     echo '<option value=""></option>"';
     $optionsForColumn = $optionsToSelectFrom[$this->databaseName];
     foreach ($optionsForColumn as $optionId => $optionDisplayName)
     {
-	  $selectedString = "";
-	  if ($value == $optionId)
-	  {
-	    $selectedString = ' selected="selected"';
+      $selectedString = "";
+      if ($value == $optionId)
+      {
+        $selectedString = ' selected="selected"';
       }
-	  echo '<option value="' . $optionId . '"' . $selectedString . '>' . $optionDisplayName . '</option>';
+      echo '<option value="' . $optionId . '"' . $selectedString . '>' . $optionDisplayName . '</option>';
     }
     echo '</select></td>';
   }

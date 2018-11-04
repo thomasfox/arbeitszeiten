@@ -50,15 +50,13 @@ function getValuesForMulticolumns($tableName, $columns, $conn)
   return $result;
 }
 
-function columnDataAsEditableTable($tableName, $columnInfos, $conn, $orderByClause="id ASC", $whereClause = '', $filterLabel=null, $filterValuesTable=null, $filterValuesColumn=null)
+function columnDataAsEditableTable(string $tableName, array $columnInfos, $conn, string $orderByClause='id ASC', string $whereClause = '', $filterLabel=null, $filterValuesTable=null, $filterValuesColumn=null)
 {
   $optionsToSelectFrom = getOptionsToSelectFrom($columnInfos, $conn);
   $valuesForMulticolumns = getValuesForMulticolumns($tableName, $columnInfos, $conn);
-  $columnNames = ColumnInfo::getSelectColumnsOfMainTable($columnInfos);
-  $concatenatedColumnNames = implode(",", $columnNames);
-  $sql = "SELECT id," . $concatenatedColumnNames . " FROM " . $tableName . $whereClause . " ORDER BY " . $orderByClause;
+  $sql = getSql($tableName, $columnInfos, $orderByClause, $whereClause, $optionsToSelectFrom, $conn);
   $result = $conn->query($sql);
-  echo '<form method="POST"><table class="table table-bordered"><thead class="thead-light"><tr><th scope="column">Nr</th>';
+  echo '<form method="POST">';
   echo '<div class="form-inline my-3">';
   echo '<button type="submit" class="btn btn-primary px-5" name="save" value="save">Speichern</button>';
   echo '<a href="#" class="btn btn-secondary mx-2" onclick="askForChangedValueSave(this, \'index.html\')" >Zurück</a>';
@@ -67,7 +65,8 @@ function columnDataAsEditableTable($tableName, $columnInfos, $conn, $orderByClau
   {
   	printFilter($filterLabel, $filterValuesTable, $filterValuesColumn, $conn);
   }
-  echo '</div>';
+  echo '<button type="submit" class="btn btn-outline-secondary ml-5" name="export" value="export">Exportieren</button>';
+  echo '</div><table class="table table-bordered"><thead class="thead-light"><tr><th scope="column">Nr</th>';
   
   foreach ($columnInfos as $columnInfo)
   {
@@ -102,6 +101,71 @@ function columnDataAsEditableTable($tableName, $columnInfos, $conn, $orderByClau
   echo '</tbody></table>';
   echo '</form>';
 }
+
+
+/**
+ * Returns the SQL to query the database to display a table on screen.
+ *
+ * @param tableName the name of the table in the database to query
+ * @param columnInfos the screen columns to display
+ * @param orderByClause the order by clause, without the leading " ORDER BY "
+ * @param whereClause the where clause, including the leading  " WHERE " if filled.
+ * @param conn the database connection
+ */
+
+function getSql(string $tableName, array $columnInfos, string $orderByClause, string $whereClause, $optionsToSelectFrom, $conn) 
+{
+  $columnNames = ColumnInfo::getSelectColumnsOfMainTable($columnInfos);
+  $concatenatedColumnNames = implode(",", $columnNames);
+  $sql = "SELECT id," . $concatenatedColumnNames . " FROM " . $tableName . $whereClause . " ORDER BY " . $orderByClause;
+ return $sql;
+}
+
+function checkCsvExport(string $tableName, array $columnInfos, $postData, $conn, string $orderByClause="id ASC", string $whereClause = '', $filterLabel=null, $filterValuesTable=null, $filterValuesColumn=null)
+{
+  if (!isset($postData["export"]) || $postData["export"] != "export")
+  {
+    return;
+  }
+  header('Content-Type: application/csv');
+  header('Content-Disposition: attachment; filename="' . $tableName . '.csv";');
+  echo "\xEF\xBB\xBF"; // UTF-8 Byte order mark for Excel
+  $out = fopen('php://output', 'w');
+  
+  $optionsToSelectFrom = getOptionsToSelectFrom($columnInfos, $conn);
+  $valuesForMulticolumns = getValuesForMulticolumns($tableName, $columnInfos, $conn);
+  
+  $columnHeadlines = array("ID");
+  foreach ($columnInfos as $columnInfo)
+  {
+    $headlinesForColumn = $columnInfo->getColumnHeaders($optionsToSelectFrom);
+    $columnHeadlines = array_merge($columnHeadlines, $headlinesForColumn);
+  }
+  fputcsv($out, $columnHeadlines, ';');
+  
+  $sql = getSql($tableName, $columnInfos, $orderByClause, $whereClause, $optionsToSelectFrom, $conn);
+  $result = $conn->query($sql);
+  if ($conn->errno == 0 && $result != false)
+  {
+    while ($row = $result->fetch_assoc())
+    {
+      $csvrow = array();
+      $csvrow[] = $row["id"];
+      foreach ($columnInfos as $columnInfo)
+      {
+        $csvrow = array_merge($csvrow, $columnInfo->getColumnValuesForRow($row, $optionsToSelectFrom, $valuesForMulticolumns));
+      }
+      fputcsv($out, $csvrow, ';');
+    }
+  }
+  else
+  {
+    alertError("columnDataAsEditableTable(): error for " . $sql . ":" . $conn->error);
+  }
+  exit(0);
+}
+
+
 
 function saveEditableTableData($tableName, $columnInfos, $postData, $conn)
 {

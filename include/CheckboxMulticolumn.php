@@ -44,28 +44,38 @@ class CheckboxMulticolumn extends Multicolumn
     }
   }
 
-  function printColumnHeaders($optionsToSelectFrom)
+  function getColumnValuesForRow($row, $optionsToSelectFrom, $valuesForMulticolumns)
   {
-    foreach ($optionsToSelectFrom[$this->databaseName] as $displayName)
-	{
-      echo '<th scope="column" class="usag">' . $displayName . '</th>';
-	}
-  }
-  
-  function printColumnsForRow($row, $optionsToSelectFrom, $valuesForMulticolumns)
-  {
-	$id = $row["id"];
+    $result = array();
+    $id = $row["id"];
     $optionsForColumn = $optionsToSelectFrom[$this->databaseName];
     $valuesForColumn = $valuesForMulticolumns[$this->databaseName];
     foreach ($optionsForColumn as $optionId=>$optionDisplayName)
     {
-	  $inputName = $this->databaseName . $id . '_' . $optionId;
-	  $checkedString = "";
-	  if (isset($valuesForColumn[$id][$optionId]))
-	  {
-	    $checkedString = ' checked="checked"';
-	  }
-	  echo '<td><input type="checkbox" name="'. $inputName . '" value="1" ' . $checkedString . ' onchange="markChanged()"/></td>';
+      $value = "";
+      if (isset($valuesForColumn[$id][$optionId]))
+      {
+        $value = '1';
+      }
+      $result[] = $value;
+    }
+    return $result;
+  }
+
+  function printColumnsForRow($row, $optionsToSelectFrom, $valuesForMulticolumns)
+  {
+    $id = $row["id"];
+    $optionsForColumn = $optionsToSelectFrom[$this->databaseName];
+    $valuesForColumn = $valuesForMulticolumns[$this->databaseName];
+    foreach ($optionsForColumn as $optionId=>$optionDisplayName)
+    {
+      $inputName = $this->databaseName . $id . '_' . $optionId;
+      $checkedString = "";
+      if (isset($valuesForColumn[$id][$optionId]))
+      {
+        $checkedString = ' checked="checked"';
+      }
+      echo '<td><input type="checkbox" name="'. $inputName . '" value="1" ' . $checkedString . ' onchange="markChanged()"/></td>';
     }
   }
   

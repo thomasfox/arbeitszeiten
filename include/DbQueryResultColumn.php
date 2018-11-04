@@ -24,6 +24,12 @@ class DbQueryResultColumn extends SingleColumn
 	return $this->selectSnippet;
   }
   
+  function getColumnValuesForRow($row, $optionsToSelectFrom, $valuesForMulticolumns)
+  {
+    $value = $row[$this->databaseName];
+  	return array($value);
+  }
+
   function printColumnsForRow($row, $optionsToSelectFrom, $valuesForMulticolumns)
   {
     $value = $row[$this->databaseName];

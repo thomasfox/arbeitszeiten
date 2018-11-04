@@ -53,6 +53,14 @@ abstract class ColumnInfo
     return $result;
   }
   
+  public function printColumnHeaders($optionsToSelectFrom)
+  {
+    foreach ($this->getColumnHeaders($optionsToSelectFrom) as $displayName)
+    {
+      echo '<th scope="column" class="usag">' . $displayName . '</th>';
+    }
+  }
+
   /**
    * Returns the select Snippet if this ColumnInfo is represented by a database expression in the main table of the displayed data, or null otherwise.
    */
@@ -83,11 +91,20 @@ abstract class ColumnInfo
   public abstract function getMulticolumnValues($tableName, $conn);
   
   /**
-   * Prints the column headers for the given options.
+   * Returns the column headers for the given options.
    *
    * @param $optionsToSelectFrom the options for this column, as array(column's database name => array(optionKey => optiondisplayName)).
    */   
-  public abstract function printColumnHeaders($optionsToSelectFrom);
+  public abstract function getColumnHeaders($optionsToSelectFrom);
+  
+  /**
+   * Returns the column value(s) of one database row for this column definition as an array.
+   *
+   * @param $row the database row's content, as array(databaseColumnName => databaseValue).
+   * @param $optionsToSelectFrom the options for this column, as array(column's database name => array(optionKey => optiondisplayName)).
+   * @param $valuesForMulticolumns values for the multicolumn, as array(column's database name => array(id of record in this table => array(id of selectOption => value)).
+   */   
+  public abstract function getColumnValuesForRow($row, $optionsToSelectFrom, $valuesForMulticolumns);
   
   /**
    * Prints the columns of one database row.

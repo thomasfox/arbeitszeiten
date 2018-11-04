@@ -62,28 +62,38 @@ class StringMulticolumn extends Multicolumn
       alertError("getMulticolumnValues: error for " . $sql . ":" . $conn->error);
     }
   }
-  
-  function printColumnHeaders($optionsToSelectFrom)
+    
+  function getColumnValuesForRow($row, $optionsToSelectFrom, $valuesForMulticolumns)
   {
-    foreach ($optionsToSelectFrom[$this->databaseName] as $displayName)
-	{
-      echo '<th scope="column" class="usag">' . $displayName . '</th>';
-	}
-  }
-  
-  function printColumnsForRow($row, $optionsToSelectFrom, $valuesForMulticolumns)
-  {
-	$id = $row["id"];
+    $result = array();
+  	$id = $row["id"];
     $optionsForColumn = $optionsToSelectFrom[$this->databaseName];
     $valuesForColumn = $valuesForMulticolumns[$this->databaseName];
     foreach ($optionsForColumn as $optionId => $optionDisplayName)
     {
-	  $inputName = $this->databaseName . $id . '_' . $optionId;
-	  $inputValue = "";
-	  if (isset($valuesForColumn[$id][$optionId]))
-	  {
-	    $inputValue = $valuesForColumn[$id][$optionId];
-	  }
+      $inputValue = "";
+      if (isset($valuesForColumn[$id][$optionId]))
+      {
+        $inputValue = $valuesForColumn[$id][$optionId];
+      }
+      $result[] = $this->outputValue($inputValue);
+    }
+    return $result;
+  }
+  
+  function printColumnsForRow($row, $optionsToSelectFrom, $valuesForMulticolumns)
+  {
+    $id = $row["id"];
+    $optionsForColumn = $optionsToSelectFrom[$this->databaseName];
+    $valuesForColumn = $valuesForMulticolumns[$this->databaseName];
+    foreach ($optionsForColumn as $optionId => $optionDisplayName)
+    {
+      $inputName = $this->databaseName . $id . '_' . $optionId;
+      $inputValue = "";
+      if (isset($valuesForColumn[$id][$optionId]))
+      {
+        $inputValue = $valuesForColumn[$id][$optionId];
+      }
       echo '<td><input name="'. $inputName . '" value="' . $this->outputValue($inputValue) . '" class="form-control"  onchange="markChanged()"/></td>';
     }
   }
