@@ -1,3 +1,11 @@
 td.usag, th.usag {
     min-width : 70px;
 }
+
+td.usag-minwidth-name, th.usag-minwidth-name {
+    min-width : 150px;
+}
+
+td.usag-minwidth-beschreibung, th.usag-minwidth-beschreibung {
+    min-width : 200px;
+}

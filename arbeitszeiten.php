@@ -23,7 +23,7 @@ if (isset($_GET['filter']))
 }
 
 $columnInfos = array(
-  new SimpleValueColumn("beschreibung", "Beschreibung", true),
+  new SimpleValueColumn("beschreibung", "Beschreibung", true, "s", "usag-minwidth-beschreibung"),
   new DropdownColumn("arbeitsgruppe_id", "Arbeitsgruppe", false, "arbeitsgruppe", "name"),
   new SimpleValueColumn("workdate", "Datum(TT.MM.JJJJ)", true, "d"),
   new StringMulticolumn("stunden", "Arbeitsstunden", "f", "arbeitszeit", "arbeitsauftrag_id", "familie", "name", "familie_id", $filterWhereClause, " name,id ASC "));

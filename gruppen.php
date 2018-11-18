@@ -2,7 +2,7 @@
 include "include/config.php";
 include "include/db.php";
 
-$columnInfos = array(new SimpleValueColumn("name", "Name", true));
+$columnInfos = array(new SimpleValueColumn("name", "Name", true, "s", "usag-minwidth-name"));
 
 checkCsvExport("arbeitsgruppe", $columnInfos, $_POST, $conn, "name,id ASC");
 ?>

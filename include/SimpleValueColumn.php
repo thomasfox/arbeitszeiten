@@ -3,10 +3,13 @@ class SimpleValueColumn extends SingleColumn
 {
   private $datatype; // one of "s" (String), "i" (Integer), "d" (Date) or "t" (Time)
 
-  function __construct($databaseName, $displayName, $required, $dataType = "s")
+  private $tdClassName; // additional css classes for the columns
+  
+  function __construct($databaseName, $displayName, $required, $dataType = "s", $tdClassName = null)
   {
-	parent::__construct($databaseName, $displayName, $required);
-	$this->datatype = $dataType;
+    parent::__construct($databaseName, $displayName, $required);
+    $this->datatype = $dataType;
+    $this->tdClassName = $tdClassName;
   }
   
   function isSingleEditableValue()
@@ -37,7 +40,12 @@ class SimpleValueColumn extends SingleColumn
     {
       $value = DateTime::createFromFormat("Y-m-d", $value)->format("d.m.Y");
     }
-    echo '<td><input name="'. $this->databaseName . $id . '" value="' . $value . '" class="form-control" onchange="markChanged()" /></td>';
+    $classSnippet = "";
+    if (isset($this->tdClassName))
+    {
+      $classSnippet = ' class="' . $this->tdClassName .'"';
+    }
+    echo '<td' . $classSnippet . '><input name="'. $this->databaseName . $id . '" value="' . $value . '" class="form-control" onchange="markChanged()" /></td>';
   }
   
   function printColumnsForNewRow($optionsToSelectFrom)
