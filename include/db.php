@@ -58,7 +58,7 @@ function columnDataAsEditableTable(string $tableName, array $columnInfos, $conn,
   $result = $conn->query($sql);
   echo '<form method="POST">';
   echo '<div class="form-inline my-3">';
-  echo '<button type="submit" class="btn btn-primary px-5" name="save" value="save">Speichern</button>';
+  echo '<button type="submit" class="btn btn-primary px-5" name="save" value="save" onclick="beforeSubmit()">Speichern</button>';
   echo '<a href="#" class="btn btn-secondary mx-2" onclick="askForChangedValueSave(this, \'index.html\')" >Zurück</a>';
   
   if ($filterLabel != null)
@@ -173,7 +173,8 @@ function saveEditableTableData($tableName, $columnInfos, $postData, $conn)
   {
     return;
   }
-
+  echo '<!-- DEBUG: Postsize: ' . sizeof($postData) . ' -->';
+  
   $columnNames = ColumnInfo::getSubmittableColumnsOfMainTable($columnInfos);
   $concatenatedColumnNames = implode(",", $columnNames);
   $sql = "SELECT id," . $concatenatedColumnNames . " FROM " . $tableName . " ORDER BY id ASC";
@@ -182,7 +183,7 @@ function saveEditableTableData($tableName, $columnInfos, $postData, $conn)
   {
     while($row = $result->fetch_assoc()) 
     {
-	  doUpdates($tableName, $row, $columnInfos, $postData, $conn);
+      doUpdates($tableName, $row, $columnInfos, $postData, $conn);
     }
   }
   else
@@ -198,8 +199,10 @@ function doUpdates($tableName, $row, $columnInfos, $postData, $conn)
   if (!isset($postData[$id]))
   {
     // line was not shown
+    echo '<!-- DEBUG: ignoring row '. $id . ' for updates -->';
     return;
   }
+  echo '<!-- DEBUG: checking for updates on row '. $id . ' -->';
   $optionsForRows = getOptionsToSelectFrom($columnInfos, $conn);
   $valuesForMulticolumns = getValuesForMulticolumns($tableName, $columnInfos, $conn);
 
@@ -208,11 +211,11 @@ function doUpdates($tableName, $row, $columnInfos, $postData, $conn)
   $validationFailed = false;
   foreach ($columnInfos as $columnInfo)
   {
-	$columnInfo->fillValuesToUpdate($updatedValues, $foreignValuesToUpdate, $postData, $row, $optionsForRows, $valuesForMulticolumns, $validationFailed);
-  }
-  if ($validationFailed)
-  {
-	return;
+    $columnInfo->fillValuesToUpdate($updatedValues, $foreignValuesToUpdate, $postData, $row, $optionsForRows, $valuesForMulticolumns, $validationFailed);
+    if ($validationFailed)
+    {
+      return;
+    }
   }
   if (count($updatedValues) > 0 && !$validationFailed)
   {
@@ -244,6 +247,7 @@ function doInserts($tableName, $columnInfos, $postData, $conn)
   }
   if ((count($insertedValues) > 0 || count($multicolumnValuesToInsert) > 0) && !$validationError)
   {
+    echo '<!-- DEBUG: about to insert new row -->';
     foreach ($columnInfos as $columnInfo)
 	{
 	  $submittedValue = null;
@@ -252,10 +256,10 @@ function doInserts($tableName, $columnInfos, $postData, $conn)
 		$submittedValue = $insertedValues[$columnInfo->databaseName];
 	  }
 	  $validationError = !$columnInfo->validateSubmittedValue($submittedValue);
-	}
-	if ($validationError)
-	{
-	  return;
+	  if ($validationError)
+	  {
+	    return;
+	  }
 	}
 	$insertColumns = implode(",", array_keys($insertedValues));
 	$insertPlaceholders = implode(',', array_fill(0, count($insertedValues), '?'));
@@ -301,12 +305,13 @@ function checkDeleteRow($tableName, $id, $columnInfos, $postData, $conn)
 {
   if ($postData["delete"] == $id)
   {
+    echo '<!-- DEBUG: about to delete row '. $id . ' -->';
     $sql = "DELETE FROM ". $tableName . " WHERE ID=" . $id;
     $conn->query($sql);
     if ($conn->errno != 0)
-	{
-	  alertError("checkDeleteRow: Execute of " . $sql . "failed (" . $conn->error . ")");
-	}
+    {
+      alertError("checkDeleteRow: Execute of " . $sql . "failed (" . $conn->error . ")");
+    }
   }
 }
 

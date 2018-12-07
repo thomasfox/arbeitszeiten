@@ -45,7 +45,7 @@ checkCsvExport("arbeitsauftrag", $columnInfos, $_POST, $conn, "workdate,id ASC",
 <?php
 checkAnyRowDeleted("arbeitsauftrag", $columnInfos, $_POST, $conn);
 saveEditableTableData("arbeitsauftrag", $columnInfos, $_POST, $conn);
-columnDataAsEditableTable("arbeitsauftrag", $columnInfos, $conn, "workdate,id ASC", empty($filter) ? '' : ' WHERE arbeitsgruppe_id = ' . $filter, "Arbeitsgruppe", "arbeitsgruppe", "name");
+columnDataAsEditableTable("arbeitsauftrag", $columnInfos, $conn, "workdate DESC,id DESC", empty($filter) ? '' : ' WHERE arbeitsgruppe_id = ' . $filter, "Arbeitsgruppe", "arbeitsgruppe", "name");
 ?>
   </div>
 </body>

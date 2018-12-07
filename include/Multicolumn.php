@@ -71,6 +71,7 @@ abstract class Multicolumn extends ColumnInfo
 	  }
 	  if ($dbValue != $submittedValue)
 	  {
+	  	echo '<!-- DEBUG: value ' . $optionId . ' for row '. $id . ' in multicolumn ' . $this->databaseName . ' changed -->';
 		if (isset($dbValuesForRow[$id][$optionId]) && !empty($submittedValue))
 		{
 		  $toUpdate[$optionId] = $submittedValue;

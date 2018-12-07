@@ -44,27 +44,31 @@ abstract class SingleColumn extends ColumnInfo
 
   function fillValuesToUpdate(&$valuesToUpdate, &$foreignValuesToUpdate, $postData, $row, $optionsToSelectFrom, $valuesForMulticolumns, &$validationFailed)
   {
-	$id = $row["id"];
-    $submittedValue = trim($postData[$this->databaseName . $id]);
+    $id = $row["id"];
+    $submittedValue = null;
+    if (isset($postData[$this->databaseName . $id]))
+    {
+      $submittedValue = trim($postData[$this->databaseName . $id]);
+    }
     if ($this->required && empty($submittedValue))
     {
-	  alertError("Die Spalte " . $this->displayName . " in Datensatz Nr. " . $id . " ist ein Pflichtfeld und muss ausgefüllt werden. Der Datensatz wurde nicht gespeichert.");
-	  $validationFailed = true;
-	  return;
+      alertError("Die Spalte " . $this->displayName . " in Datensatz Nr. " . $id . " ist ein Pflichtfeld und muss ausgefüllt werden. Der Datensatz wurde nicht gespeichert.");
+      $validationFailed = true;
+      return;
     }
     $dbValue = $row[$this->databaseName];	  
     {
-	  if ($dbValue != $submittedValue)
-	  {
-	    if (!empty($submittedValue))
-	    {
-		  $valuesToUpdate[$this->databaseName] = $this->getDatabaseValue($submittedValue, $validationFailed);
-	    }
-	    else
-	    {
-		  $valuesToUpdate[$this->databaseName] = null;
-	    }
-	  }
+      if ($dbValue != $submittedValue)
+      {
+        if (!empty($submittedValue))
+        {
+          $valuesToUpdate[$this->databaseName] = $this->getDatabaseValue($submittedValue, $validationFailed);
+        }
+        else
+        {
+          $valuesToUpdate[$this->databaseName] = null;
+        }
+      }
     }
   }
   
