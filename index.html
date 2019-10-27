@@ -13,7 +13,8 @@
       <p>Hier können die Elternarbeitszeiten der Unterseeschule verwaltet werden.<p>
     </div>
     <div class="my-4">
-      <a href="arbeitszeiten.php" class="btn btn-primary mx-2">Arbeitszeiten</a>
+      <a href="arbeitszeitenGruppen.php" class="btn btn-primary mx-2">Arbeitszeiten nach Arbeitsgruppen</a>
+      <a href="arbeitszeitenFamilien.php" class="btn btn-primary mx-2">Arbeitszeiten nach Familien</a>
       <a href="gruppen.php" class="btn btn-primary mx-2">Arbeitsgruppen</a>
       <a href="familien.php" class="btn btn-primary mx-2">Familien</a>
     </div>
@@ -39,8 +40,11 @@
       </p>
       <h4>Arbeitszeiten-Ansicht</h4>
       <p>
-        In der Arbeitszeiten-Ansicht kann man nach Arbeitsgruppen filtern. 
-        Dieser Filter filtert sowohl die Spalten (Familien) als auch die Zeilen (Arbeitsaufträge) so, dass nur die Familien und Arbeitsaufträge, die mit dieser Gruppe gekennzeichnet sind, sichtbar sind. 
+        In den beiden Arbeitszeiten-Ansichten kann man entweder nach Arbeitsgruppen oder nach einzelnen Familien filtern. 
+        Der Gruppenfilter in der Ansicht "Arbeitszeiten nach Arbeitsgruppen" filtert sowohl die Spalten (Familien) als auch die Zeilen (Arbeitsaufträge) so,
+        dass nur die Familien und Arbeitsaufträge, die mit dieser Gruppe gekennzeichnet sind, sichtbar sind. 
+        Der Familienfilter in der Ansicht "Arbeitszeiten nach Familien" filtert sowohl die Spalten (Familien) als auch die Zeilen (Arbeitsaufträge) so, 
+        dass nur die gewählte Familie und Arbeitsaufträge, für die diese Familie Werte eingetragen hat, sichtbar sind. 
         Wie schon oben erwähnt, werden beim Ändern des Filters die Änderungen verworfen (es gibt aber noch eine Sicherheitsabfrage). 
         Die Arbeitsaufträge werden nach Datum sortiert angezeigt.
       </p>
@@ -50,11 +54,19 @@
       </p>
       <h4>Version</h4>
       <p>
-        Die installierte Version der Anwendung ist 1.3 (7.12.2018)
+        Die installierte Version der Anwendung ist 1.4 (4.10.2109)
       </p>
       <h4>Änderungen</h4>
       <ul>
-        <li>Version 1.3
+        <li>Version 1.4 (4.10.2109)
+          <ul>
+            <li>Beim Speichern wird überprüft, ob mehr Werte übertragen wurden als verarbeitet werden können</li>
+            <li>Neue Ansicht "Arbeitszeiten nach Familien" eingefügt</li>
+            <li>Bisherige Ansicht "Arbeitszeiten" umbenannt nach "Arbeitszeiten nach Gruppen"</li>
+            <li>Bugfix: In der Arbeitszeiten-ansicht waren die exportierten Daten umgekehrt sortiert wie die angezeigten Daten</li>
+          </ul>
+        </li>
+        <li>Version 1.3 ((7.12.2018))
           <ul>
             <li>Arbeitszeiten werden absteigend nach Datum sortiert (neueste oben).</li>
             <li>Bugfix: In großen Tabellen wurden die letzten Felder nicht gespeichert.</li>
@@ -79,6 +91,11 @@
             <li>Filter ändern Button entfernt, stattdessen wird bei der Auswahl eines neuen Filters gleich gewechselt</li>
           </ul>
         </li>
+      </ul>
+      <h4>TODO</h4>
+      <ul>
+        <li>Löschen-Knopf mit einer Sicherheitsabfrage versehen</li>
+        <li>Bei den Arbeitszeiten-Ansichten: Wenn man einen Filter an hat und eine Zeile löscht, ist nicht klar, dass man evtl auch nicht angezeigte Stunden löscht</li>
       </ul>
     </div>
   </div>

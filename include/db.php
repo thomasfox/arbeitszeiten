@@ -169,11 +169,16 @@ function checkCsvExport(string $tableName, array $columnInfos, $postData, $conn,
 
 function saveEditableTableData($tableName, $columnInfos, $postData, $conn)
 {
+  echo '<!-- DEBUG: Postsize: ' . sizeof($postData) . " max_input_vars: " . ini_get('max_input_vars') . ' -->';
+  if (sizeof($postData) >= ini_get('max_input_vars'))
+  {
+    alertError("Zu viele Daten übertragen. Bitte filtern, um Daten zu speichern.");
+    return;
+  }
   if (!isset($postData["save"]) && !isset($postData["delete"]))
   {
     return;
   }
-  echo '<!-- DEBUG: Postsize: ' . sizeof($postData) . ' -->';
   
   $columnNames = ColumnInfo::getSubmittableColumnsOfMainTable($columnInfos);
   $concatenatedColumnNames = implode(",", $columnNames);
